@@ -7,7 +7,6 @@ import {
   Hash,
   LayoutDashboard,
   ListOrdered,
-  Printer,
   RotateCw,
   ScanLine,
   Settings,
@@ -164,7 +163,7 @@ function SettingsNav() {
 
       <nav className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-3 pb-3">
         <Section title="Cài đặt">
-          <NavItem icon={<Printer />} label="Máy in" active />
+          <NavItem icon={<Settings />} label="Chung" active />
         </Section>
       </nav>
     </>

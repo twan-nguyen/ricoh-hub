@@ -1,7 +1,10 @@
 use std::{fs, path::PathBuf, sync::Mutex};
 
 use serde::{Deserialize, Serialize};
-use tauri::State;
+use tauri::{AppHandle, State};
+use tauri_plugin_autostart::ManagerExt;
+
+use crate::monitor::Monitor;
 
 /// Where the printer lives on the network. Kept in the app's config folder.
 #[derive(Clone, Serialize, Deserialize)]
@@ -12,6 +15,13 @@ pub struct PrinterSettings {
     /// Where scans are saved; none means Downloads/Ricoh Scans.
     #[serde(default)]
     pub scan_folder: Option<String>,
+    /// Start hidden in the menu bar when the user logs in to the Mac.
+    #[serde(default = "on")]
+    pub launch_at_login: bool,
+}
+
+fn on() -> bool {
+    true
 }
 
 impl Default for PrinterSettings {
@@ -21,6 +31,7 @@ impl Default for PrinterSettings {
             host: "192.168.1.103".into(),
             community: "public".into(),
             scan_folder: None,
+            launch_at_login: true,
         }
     }
 }
@@ -66,15 +77,16 @@ pub fn get_settings(settings: State<'_, Settings>) -> PrinterSettings {
 
 #[tauri::command]
 pub fn save_settings(
-    host: String,
-    community: String,
-    scan_folder: Option<String>,
+    next: PrinterSettings,
+    app: AppHandle,
     settings: State<'_, Settings>,
+    monitor: State<'_, Monitor>,
 ) -> Result<PrinterSettings, String> {
     let next = PrinterSettings {
-        host: host.trim().to_string(),
-        community: community.trim().to_string(),
-        scan_folder: scan_folder.map(|f| f.trim().to_string()).filter(|f| !f.is_empty()),
+        host: next.host.trim().to_string(),
+        community: next.community.trim().to_string(),
+        scan_folder: next.scan_folder.map(|f| f.trim().to_string()).filter(|f| !f.is_empty()),
+        launch_at_login: next.launch_at_login,
     };
     if next.host.is_empty() {
         return Err("Hãy nhập địa chỉ máy in.".into());
@@ -82,6 +94,26 @@ pub fn save_settings(
     if next.community.is_empty() {
         return Err("Hãy nhập SNMP community.".into());
     }
+    let previous = settings.get();
+    apply_launch_at_login(&app, next.launch_at_login)?;
     settings.save(next.clone())?;
+    if previous.host != next.host || previous.community != next.community {
+        monitor.reset(&app);
+    }
     Ok(next)
+}
+
+/// Adds or removes the login item to match the setting. Development builds leave it
+/// alone: a login item pointing at the debug binary would open a window with no dev server behind it.
+pub fn apply_launch_at_login(app: &AppHandle, enabled: bool) -> Result<(), String> {
+    if cfg!(debug_assertions) {
+        return Ok(());
+    }
+    let autolaunch = app.autolaunch();
+    let result = match autolaunch.is_enabled() {
+        Ok(current) if current == enabled => Ok(()),
+        _ if enabled => autolaunch.enable(),
+        _ => autolaunch.disable(),
+    };
+    result.map_err(|e| format!("Không đổi được chế độ mở khi đăng nhập: {e}"))
 }

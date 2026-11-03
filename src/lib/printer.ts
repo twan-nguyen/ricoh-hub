@@ -5,6 +5,8 @@ export type PrinterSettings = {
   community: string;
   /** Where scans are saved; null means Downloads/Ricoh Scans. */
   scanFolder: string | null;
+  /** Start hidden in the menu bar at login; applied only by a packaged build. */
+  launchAtLogin: boolean;
 };
 
 export type Tray = {
@@ -67,7 +69,21 @@ export type SubmittedJob = { id: number; name: string };
 /** Extensions the printer reads itself; anything else has to become a PDF first. */
 export const PRINTABLE_EXTENSIONS = ["pdf", "jpg", "jpeg", "ps"];
 
-export const getSnapshot = () => invoke<Snapshot>("get_snapshot");
+/** What the app knows about the printer, kept current by a reader in the background. */
+export type PrinterStatus = {
+  /** The last good reading; it stays while the printer cannot be reached. */
+  snapshot: Snapshot | null;
+  /** When `snapshot` was read, in milliseconds since the epoch. */
+  updatedAt: number | null;
+  /** Why the last reading failed. */
+  error: string | null;
+  reading: boolean;
+};
+
+export const getStatus = () => invoke<PrinterStatus>("get_status");
+
+/** Reads the printer now instead of at the next tick; the result comes as a `printer-status` event. */
+export const refreshPrinter = () => invoke<void>("refresh_printer");
 
 export const printFile = (path: string, options: PrintOptions) =>
   invoke<SubmittedJob>("print_file", { path, options });
@@ -129,5 +145,5 @@ export const revealScan = (path: string) => invoke<void>("reveal_scan", { path }
 
 export const getSettings = () => invoke<PrinterSettings>("get_settings");
 
-export const saveSettings = (settings: PrinterSettings) =>
-  invoke<PrinterSettings>("save_settings", settings);
+export const saveSettings = (next: PrinterSettings) =>
+  invoke<PrinterSettings>("save_settings", { next });

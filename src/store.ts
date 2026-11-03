@@ -1,16 +1,19 @@
+import { listen } from "@tauri-apps/api/event";
 import { create } from "zustand";
 
 import {
   type PrintOptions,
   type PrinterSettings,
+  type PrinterStatus,
   type ScanOptions,
   type Snapshot,
   type SubmittedJob,
   cancelJob,
   cancelScan,
   getSettings,
-  getSnapshot,
+  getStatus,
   printFile,
+  refreshPrinter,
   saveSettings,
   startScan,
 } from "@/lib/printer";
@@ -20,9 +23,6 @@ export type View = "overview" | "print" | "scan" | "jobs" | "counters" | "settin
 
 export type ScanFile = { path: string; bytes: number };
 
-/** How often the printer is asked again while the window is open. */
-const REFRESH_MS = 10_000;
-
 type State = {
   view: View;
   settings: PrinterSettings | null;
@@ -31,6 +31,7 @@ type State = {
   updatedAt: number | null;
   /** The last read failed; the previous snapshot, if any, stays on screen. */
   error: string | null;
+  /** A reading is under way. */
   loading: boolean;
   /** The file waiting to be printed, picked or dropped on the window. */
   document: string | null;
@@ -69,38 +70,36 @@ export const useStore = create<State>()((set, get) => ({
 
   init() {
     getSettings().then((settings) => set({ settings }));
-    get().refresh();
-    const timer = setInterval(() => get().refresh(), REFRESH_MS);
+    // The Rust side reads the printer on its own timer, also while the window is hidden.
+    const show = (status: PrinterStatus) =>
+      set({
+        snapshot: status.snapshot,
+        updatedAt: status.updatedAt,
+        error: status.error,
+        loading: status.reading,
+      });
+    getStatus().then(show);
+    const listening = [
+      listen<PrinterStatus>("printer-status", (event) => show(event.payload)),
+      // "In tài liệu…" in the menu bar opens the window on a view.
+      listen<View>("navigate", (event) => set({ view: event.payload })),
+    ];
     // Coming back to the window should not show numbers up to ten seconds old.
     const onFocus = () => get().refresh();
     window.addEventListener("focus", onFocus);
     return () => {
-      clearInterval(timer);
+      for (const unlisten of listening) unlisten.then((stop) => stop());
       window.removeEventListener("focus", onFocus);
     };
   },
 
   setView: (view) => set({ view }),
 
-  async refresh() {
-    // A printer waking from Energy Saver can be slow; never stack reads on it.
-    if (get().loading) return;
-    set({ loading: true });
-    try {
-      const snapshot = await getSnapshot();
-      set({ snapshot, updatedAt: Date.now(), error: null });
-    } catch (err) {
-      set({ error: errorMessage(err) });
-    } finally {
-      set({ loading: false });
-    }
-  },
+  refresh: () => refreshPrinter(),
 
   async saveSettings(next) {
-    const settings = await saveSettings(next);
-    // Numbers from the old address must not pass for the new printer's.
-    set({ settings, snapshot: null, updatedAt: null, error: null });
-    await get().refresh();
+    // A new address clears the old printer's numbers on the Rust side, which then reads the new one.
+    set({ settings: await saveSettings(next) });
   },
 
   setDocument: (document) => set({ document }),

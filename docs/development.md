@@ -1,6 +1,6 @@
 # Ricoh Hub: phát triển
 
-App desktop (Tauri 2) xem trạng thái máy in Ricoh IM 3500 trong mạng LAN. Chỉ đọc, không đổi gì trên máy in.
+App desktop (Tauri 2) cho máy in Ricoh IM 3500 trong mạng LAN: xem trạng thái, in, scan, và theo dõi máy in từ menu bar. App không đổi cấu hình nào trên máy in.
 
 ## Chạy
 
@@ -10,11 +10,11 @@ pnpm tauri dev      # Vite ở cổng 1430, cạnh ClusterSmith ở 1420
 pnpm tauri build    # đóng gói .app / .dmg
 ```
 
-Địa chỉ máy in mặc định là `192.168.1.103` với SNMP community `public`. Đổi trong app ở **Cài đặt › Máy in** (⌘,). Giá trị được lưu ở `settings.json` trong thư mục cấu hình của app (`~/Library/Application Support/com.ricohhub.desktop/`).
+Địa chỉ máy in mặc định là `192.168.1.103` với SNMP community `public`. Đổi trong app ở **Cài đặt › Chung** (⌘,). Giá trị được lưu ở `settings.json` trong thư mục cấu hình của app (`~/Library/Application Support/com.ricohhub.desktop/`).
 
 ## Cách app đọc máy in
 
-Phía Rust (`src-tauri/src/`) gom mọi thứ vào một lệnh `get_snapshot`. Giao diện gọi lệnh này 10 giây một lần, và gọi lại mỗi khi cửa sổ được focus.
+Phía Rust (`src-tauri/src/`) gom mọi thứ vào một lần đọc (`snapshot::read_snapshot`). `monitor.rs` chạy lần đọc này theo nhịp riêng, kể cả khi cửa sổ đã đóng, rồi gửi kết quả cho giao diện qua event `printer-status`. Giao diện lấy trạng thái hiện có bằng `get_status` và nhờ đọc ngay bằng `refresh_printer` (⌘R, hoặc mỗi khi cửa sổ được focus).
 
 | Nguồn | File | Lấy gì |
 |---|---|---|
@@ -65,6 +65,22 @@ Test với máy thật:
 cd src-tauri
 RICOH_HOST=192.168.1.103 cargo test live_scanner -- --ignored --nocapture        # chỉ đọc
 RICOH_SCAN=1 cargo test live_scan_glass -- --ignored --nocapture                 # scan mặt kính 1 lần
+```
+
+## Menu bar
+
+App sống trên menu bar (`src-tauri/src/tray.rs`). Đóng cửa sổ (nút đỏ, ⌘W) chỉ ẩn cửa sổ và icon Dock; app vẫn theo dõi máy in. Muốn thoát hẳn thì dùng ⌘Q hoặc mục "Thoát Ricoh Hub" trong menu của icon.
+
+- Nhịp đọc: 10 giây khi cửa sổ mở, 60 giây khi ẩn, để máy in vẫn vào được Energy Saver. Lần đọc chưa xong thì không chồng thêm lần đọc mới.
+- Icon là ảnh template: macOS tự tô theo màu menu bar sáng hoặc tối, nên trạng thái được thể hiện bằng hình chứ không bằng màu. Icon bình thường là máy in; có cảnh báo thì thêm vòng tròn rỗng; có lỗi hoặc máy dừng thì thêm chấm đặc; không đọc được máy thì icon mờ. Dòng đầu của menu ghi trạng thái, ví dụ `Sẵn sàng · mực 20%`.
+- Đổi địa chỉ máy in thì số liệu cũ bị xóa ngay. Nếu đang có lần đọc với địa chỉ cũ, kết quả của lần đó bị bỏ.
+- Mở khi đăng nhập: bật sẵn, tắt được ở **Cài đặt › Chung**, mục Ứng dụng. App dùng `tauri-plugin-autostart` để tạo LaunchAgent, truyền tham số `--hidden` để app khởi động thẳng vào menu bar. Bản dev (`pnpm tauri dev`) không tạo LaunchAgent, vì LaunchAgent trỏ tới file debug sẽ mở một cửa sổ trống khi không có Vite.
+
+Icon nằm ở `src-tauri/icons/tray/`. Muốn sửa thì sửa file `.svg`, rồi tạo lại `.png` (36 px, tức 18 pt @2x):
+
+```bash
+cd src-tauri/icons/tray
+for f in ok warning error offline; do rsvg-convert $f.svg -o $f.png; done
 ```
 
 ## Biểu đồ

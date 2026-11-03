@@ -20,6 +20,7 @@
         "titleBarStyle": "Overlay",
         "hiddenTitle": true,
         "label": "main",
+        "visible": false,
         "theme": "Dark"
       }
     ],

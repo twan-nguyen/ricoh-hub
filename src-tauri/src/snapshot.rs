@@ -1,11 +1,10 @@
 use std::collections::HashMap;
 
 use serde::Serialize;
-use tauri::State;
 
 use crate::{
     printer_ipp::{self, Job},
-    settings::{PrinterSettings, Settings},
+    settings::PrinterSettings,
     snmp::Snmp,
 };
 
@@ -23,7 +22,7 @@ const COUNTER_NAMES: &[u64] = &[1, 3, 6, 1, 4, 1, 367, 3, 2, 1, 2, 19, 5, 1, 6];
 const COUNTER_VALUES: &[u64] = &[1, 3, 6, 1, 4, 1, 367, 3, 2, 1, 2, 19, 5, 1, 9];
 
 /// Everything the dashboard shows, read in one pass.
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
     host: String,
@@ -33,20 +32,20 @@ pub struct Snapshot {
     firmware: Option<String>,
     uptime_seconds: Option<i64>,
     /// IPP printer-state: 3 idle, 4 processing, 5 stopped.
-    state: i32,
+    pub(crate) state: i32,
     /// IPP printer-state-reasons, such as `media-low-warning`.
-    reasons: Vec<String>,
+    pub(crate) reasons: Vec<String>,
     /// Messages from the printer's alert table, as the control panel words them.
     alerts: Vec<String>,
     display: Option<String>,
     /// Black toner left, in percent; Ricoh reports it in steps.
-    toner: Option<i32>,
+    pub(crate) toner: Option<i32>,
     trays: Vec<Tray>,
     counters: Vec<Counter>,
     jobs: Vec<Job>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Tray {
     name: String,
@@ -61,7 +60,7 @@ pub struct Tray {
     available: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Counter {
     index: u64,
@@ -169,12 +168,7 @@ async fn read_snmp(host: &str, community: &str) -> Result<SnmpPart, String> {
     })
 }
 
-#[tauri::command]
-pub async fn get_snapshot(settings: State<'_, Settings>) -> Result<Snapshot, String> {
-    read_snapshot(settings.get()).await
-}
-
-async fn read_snapshot(settings: PrinterSettings) -> Result<Snapshot, String> {
+pub(crate) async fn read_snapshot(settings: PrinterSettings) -> Result<Snapshot, String> {
     let host = settings.host.as_str();
     let (printer, jobs, snmp) = tokio::join!(
         printer_ipp::printer_attributes(host),

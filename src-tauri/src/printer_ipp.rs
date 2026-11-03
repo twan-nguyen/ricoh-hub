@@ -20,7 +20,7 @@ pub struct PrinterAttributes {
     pub input_trays: Vec<String>,
 }
 
-#[derive(Serialize)]
+#[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Job {
     pub id: i32,

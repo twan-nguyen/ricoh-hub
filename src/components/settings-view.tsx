@@ -3,6 +3,7 @@ import { Check, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Panel, PanelHeader } from "@/components/panel";
+import { Segmented } from "@/components/form-controls";
 import { SettingsHeading } from "@/components/settings-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ export function SettingsView() {
         <Settings className="size-4 text-muted-foreground" />
         <span className="text-muted-foreground">Cài đặt</span>
         <span className="text-muted-foreground/60">/</span>
-        <h1 className="font-medium">Máy in</h1>
+        <h1 className="font-medium">Chung</h1>
       </PanelHeader>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -27,6 +28,12 @@ export function SettingsView() {
             description="Ricoh Hub đọc máy in qua SNMP và IPP ở địa chỉ này. Chỉ đọc, không đổi gì trên máy."
           />
           <PrinterForm />
+
+          <SettingsHeading
+            title="Ứng dụng"
+            description="Đóng cửa sổ thì Ricoh Hub vẫn chạy trên menu bar và tiếp tục theo dõi máy in. Thoát hẳn bằng ⌘Q hoặc menu của icon trên menu bar."
+          />
+          <AppForm />
         </section>
       </div>
     </Panel>
@@ -44,13 +51,14 @@ function PrinterForm() {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // Keyed on the fields this form edits, so saving another setting keeps unsaved edits here.
   useEffect(() => {
     if (!settings) return;
     setHost(settings.host);
     setCommunity(settings.community);
     setScanFolder(settings.scanFolder);
     if (!settings.scanFolder) getScanFolder().then(setDefaultFolder, () => setDefaultFolder(null));
-  }, [settings]);
+  }, [settings?.host, settings?.community, settings?.scanFolder]);
 
   const changed =
     settings &&
@@ -75,7 +83,8 @@ function PrinterForm() {
     setError(null);
     setSaved(false);
     try {
-      await saveSettings({ host, community, scanFolder });
+      if (!settings) return;
+      await saveSettings({ ...settings, host, community, scanFolder });
       setSaved(true);
     } catch (err) {
       setError(errorMessage(err));
@@ -166,6 +175,46 @@ function PrinterForm() {
       </div>
       {error && <p className="animate-fade-in text-destructive">{error}</p>}
     </form>
+  );
+}
+
+/** Saved as soon as it changes; there is nothing to type, so no Save button. */
+function AppForm() {
+  const { settings, saveSettings } = useStore();
+  const [error, setError] = useState<string | null>(null);
+  if (!settings) return null;
+
+  async function setLaunchAtLogin(value: "on" | "off") {
+    if (!settings) return;
+    setError(null);
+    try {
+      await saveSettings({ ...settings, launchAtLogin: value === "on" });
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-5 rounded-lg border border-border p-5">
+      <div className="flex flex-col gap-1.5">
+        <span className="font-medium">Mở khi đăng nhập</span>
+        <Segmented
+          label="Mở khi đăng nhập"
+          value={settings.launchAtLogin ? "on" : "off"}
+          options={[
+            { value: "on", label: "Bật" },
+            { value: "off", label: "Tắt" },
+          ]}
+          onChange={setLaunchAtLogin}
+        />
+        <p className="text-xs text-muted-foreground">
+          {import.meta.env.DEV
+            ? "Bản đang phát triển không đổi mục này trong macOS; chỉ bản đã đóng gói mới áp dụng."
+            : "Ricoh Hub chạy ẩn trên menu bar ngay khi bạn đăng nhập máy Mac."}
+        </p>
+      </div>
+      {error && <p className="animate-fade-in text-destructive">{error}</p>}
+    </div>
   );
 }
 
