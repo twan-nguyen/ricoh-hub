@@ -10,6 +10,8 @@ pnpm tauri dev      # Vite ở cổng 1430, cạnh ClusterSmith ở 1420
 pnpm tauri build    # đóng gói .app / .dmg
 ```
 
+Phát hành qua Homebrew: xem [releasing.md](releasing.md).
+
 Địa chỉ máy in mặc định là `192.168.1.103` với SNMP community `public`. Đổi trong app ở **Cài đặt › Chung** (⌘,). Giá trị được lưu ở `settings.json` trong thư mục cấu hình của app (`~/Library/Application Support/com.ricohhub.desktop/`).
 
 ## Cách app đọc máy in
