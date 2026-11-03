@@ -29,6 +29,25 @@ Những điều riêng của máy này, đã kiểm chứng trên IM 3500 firmwa
 - Máy in xóa lệnh đã in xong khỏi IPP gần như ngay lập tức, nên danh sách Lệnh in thường trống.
 - `snmp2` phải bật feature `heap_buffers`. Nếu không, bộ đệm 64 KB nằm trên stack và làm tràn stack.
 
+## In và hủy lệnh in
+
+`src-tauri/src/printing.rs` gửi IPP Print-Job và Cancel-Job. Giao diện ở `src/components/print-view.tsx` (⌘P) và nút hủy ở màn Lệnh in.
+
+- Máy chỉ nhận PDF, JPEG và PostScript. File khác bị chặn ngay trong app, kèm lời nhắc xuất sang PDF.
+- Tùy chọn gửi đi: `copies`, `sides`, `page-ranges`, và khay qua `media-col.media-source`. Máy này không nhận `media-source` đứng riêng ngoài `media-col`.
+- Người gửi là tên user macOS (`$USER`), nên Ricoh hiển thị đúng người trong lịch sử in.
+- Máy chỉ hỗ trợ `job-hold-until = no-hold`, nên không thể giữ lệnh lại. Lệnh in ngắn thường in xong trước khi kịp hủy; nút hủy hữu ích nhất với lệnh dài hoặc đang xếp hàng.
+- Kéo file vào bất kỳ đâu trong cửa sổ sẽ mở màn In tài liệu với file đó.
+
+Hai test với máy thật, không in trang nào:
+
+```bash
+cd src-tauri
+RICOH_HOST=192.168.1.103 cargo test live_ -- --ignored --skip live_snapshot
+```
+
+`live_validate_prints_nothing` gửi Validate-Job với đủ tùy chọn. `live_cancel_unknown_job_is_not_found` hủy một mã lệnh không tồn tại.
+
 ## Biểu đồ
 
 Biểu đồ ở trang Tổng quan lấy từ [EvilCharts](https://github.com/legions-developer/evilcharts), bản Recharts, cài bằng shadcn CLI. Code nằm ở `src/components/evilcharts/` và được phép sửa trực tiếp.

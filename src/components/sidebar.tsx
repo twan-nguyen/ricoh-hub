@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ChevronsUpDown,
   ExternalLink,
+  FileUp,
   Hash,
   LayoutDashboard,
   ListOrdered,
@@ -66,10 +67,10 @@ function AppNav() {
             onClick={() => setView("overview")}
           />
           <NavItem
-            icon={<Hash />}
-            label="Bộ đếm"
-            active={view === "counters"}
-            onClick={() => setView("counters")}
+            icon={<FileUp />}
+            label="In tài liệu"
+            active={view === "print"}
+            onClick={() => setView("print")}
           />
           <NavItem
             icon={<ListOrdered />}
@@ -77,6 +78,12 @@ function AppNav() {
             count={snapshot?.jobs.length}
             active={view === "jobs"}
             onClick={() => setView("jobs")}
+          />
+          <NavItem
+            icon={<Hash />}
+            label="Bộ đếm"
+            active={view === "counters"}
+            onClick={() => setView("counters")}
           />
         </Section>
       </nav>

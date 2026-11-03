@@ -47,7 +47,30 @@ export type Snapshot = {
   jobs: Job[];
 };
 
+export type Sides = "one-sided" | "two-sided-long-edge" | "two-sided-short-edge";
+
+/** IPP `media-source`; "manual" is the bypass tray. */
+export type TraySource = "auto" | "tray-1" | "tray-2" | "manual";
+
+export type PrintOptions = {
+  copies: number;
+  sides: Sides;
+  tray: TraySource;
+  /** "1-3, 5", or empty for every page. */
+  pages: string;
+};
+
+export type SubmittedJob = { id: number; name: string };
+
+/** Extensions the printer reads itself; anything else has to become a PDF first. */
+export const PRINTABLE_EXTENSIONS = ["pdf", "jpg", "jpeg", "ps"];
+
 export const getSnapshot = () => invoke<Snapshot>("get_snapshot");
+
+export const printFile = (path: string, options: PrintOptions) =>
+  invoke<SubmittedJob>("print_file", { path, options });
+
+export const cancelJob = (jobId: number) => invoke<void>("cancel_job", { jobId });
 
 export const getSettings = () => invoke<PrinterSettings>("get_settings");
 

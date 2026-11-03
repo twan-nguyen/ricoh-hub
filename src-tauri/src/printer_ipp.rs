@@ -6,7 +6,7 @@ use serde::Serialize;
 const TIMEOUT: Duration = Duration::from_secs(8);
 
 /// Ricoh serves IPP on the web port under `/printer`; port 631 is closed.
-fn printer_uri(host: &str) -> Result<Uri, String> {
+pub(crate) fn printer_uri(host: &str) -> Result<Uri, String> {
     format!("http://{host}:80/printer")
         .parse()
         .map_err(|e| format!("Địa chỉ máy in không hợp lệ: {e}"))
@@ -79,16 +79,41 @@ fn keywords(names: &[&str]) -> Result<IppValue, String> {
     Ok(IppValue::Array(values))
 }
 
-async fn send(host: &str, request: IppRequestResponse) -> Result<IppRequestResponse, String> {
+/// Sends a request and hands back the answer whatever its status, for callers
+/// that word a refusal themselves.
+pub(crate) async fn send_raw(
+    host: &str,
+    request: IppRequestResponse,
+) -> Result<IppRequestResponse, String> {
     let client = AsyncIppClient::builder(printer_uri(host)?)
         .request_timeout(TIMEOUT)
         .build();
-    let response = client.send(request).await.map_err(|e| format!("IPP: {e}"))?;
+    client.send(request).await.map_err(|e| format!("IPP: {e}"))
+}
+
+async fn send(host: &str, request: IppRequestResponse) -> Result<IppRequestResponse, String> {
+    let response = send_raw(host, request).await?;
     let status = response.header().status_code();
     if !status.is_success() {
         return Err(format!("IPP: máy in trả về {status:?}"));
     }
     Ok(response)
+}
+
+pub(crate) fn add_attribute(
+    request: &mut IppRequestResponse,
+    group: DelimiterTag,
+    name: &str,
+    value: IppValue,
+) -> Result<(), String> {
+    let name: IppName = name.try_into().map_err(|e: IppParseError| e.to_string())?;
+    request.attributes_mut().add(group, IppAttribute::new(name, value));
+    Ok(())
+}
+
+/// Who the printer lists as the sender: the macOS user, as other Mac apps send it.
+pub(crate) fn user_name() -> String {
+    std::env::var("USER").unwrap_or_else(|_| "ricoh-hub".into())
 }
 
 pub async fn printer_attributes(host: &str) -> Result<PrinterAttributes, String> {
@@ -140,12 +165,8 @@ async fn jobs_of(host: &str, which: &str) -> Result<Vec<Job>, String> {
         Some(printer_uri(host)?),
     )
     .map_err(|e| e.to_string())?;
-    let mut add = |name: &str, value: IppValue| -> Result<(), String> {
-        let name: IppName = name.try_into().map_err(|e: IppParseError| e.to_string())?;
-        request
-            .attributes_mut()
-            .add(DelimiterTag::OperationAttributes, IppAttribute::new(name, value));
-        Ok(())
+    let mut add = |name: &str, value: IppValue| {
+        add_attribute(&mut request, DelimiterTag::OperationAttributes, name, value)
     };
     add(
         IppAttribute::REQUESTING_USER_NAME,
