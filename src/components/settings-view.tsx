@@ -7,7 +7,7 @@ import { Segmented } from "@/components/form-controls";
 import { SettingsHeading } from "@/components/settings-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getScanFolder } from "@/lib/printer";
+import { type NotifySettings, type PrinterSettings, getScanFolder } from "@/lib/printer";
 import { errorMessage } from "@/lib/utils";
 import { useStore } from "@/store";
 
@@ -29,11 +29,7 @@ export function SettingsView() {
           />
           <PrinterForm />
 
-          <SettingsHeading
-            title="Ứng dụng"
-            description="Đóng cửa sổ thì Ricoh Hub vẫn chạy trên menu bar và tiếp tục theo dõi máy in. Thoát hẳn bằng ⌘Q hoặc menu của icon trên menu bar."
-          />
-          <AppForm />
+          <AppSettings />
         </section>
       </div>
     </Panel>
@@ -178,25 +174,40 @@ function PrinterForm() {
   );
 }
 
-/** Saved as soon as it changes; there is nothing to type, so no Save button. */
-function AppForm() {
+const NOTIFY_OPTIONS: { key: keyof NotifySettings; label: string; hint: string }[] = [
+  { key: "paper", label: "Giấy", hint: "Một khay hết giấy, hoặc còn dưới 15%." },
+  { key: "toner", label: "Mực", hint: "Hết hoặc sắp hết mực; hộp mực thải sắp đầy hoặc đã đầy." },
+  { key: "jam", label: "Kẹt giấy, cửa mở", hint: "Kẹt giấy, cửa máy hoặc khay giấy đang mở." },
+  {
+    key: "connection",
+    label: "Mất kết nối",
+    hint: "Không đọc được máy in 3 lần liền, sau khi đã kết nối được.",
+  },
+];
+
+/** Saved as soon as something changes; there is nothing to type, so no Save button. */
+function AppSettings() {
   const { settings, saveSettings } = useStore();
   const [error, setError] = useState<string | null>(null);
   if (!settings) return null;
 
-  async function setLaunchAtLogin(value: "on" | "off") {
+  async function update(patch: Partial<PrinterSettings>) {
     if (!settings) return;
     setError(null);
     try {
-      await saveSettings({ ...settings, launchAtLogin: value === "on" });
+      await saveSettings({ ...settings, ...patch });
     } catch (err) {
       setError(errorMessage(err));
     }
   }
 
   return (
-    <div className="flex flex-col gap-5 rounded-lg border border-border p-5">
-      <div className="flex flex-col gap-1.5">
+    <>
+      <SettingsHeading
+        title="Ứng dụng"
+        description="Đóng cửa sổ thì Ricoh Hub vẫn chạy trên menu bar và tiếp tục theo dõi máy in. Thoát hẳn bằng ⌘Q hoặc menu của icon trên menu bar."
+      />
+      <div className="flex flex-col gap-1.5 rounded-lg border border-border p-5">
         <span className="font-medium">Mở khi đăng nhập</span>
         <Segmented
           label="Mở khi đăng nhập"
@@ -205,7 +216,7 @@ function AppForm() {
             { value: "on", label: "Bật" },
             { value: "off", label: "Tắt" },
           ]}
-          onChange={setLaunchAtLogin}
+          onChange={(value) => update({ launchAtLogin: value === "on" })}
         />
         <p className="text-xs text-muted-foreground">
           {import.meta.env.DEV
@@ -213,8 +224,31 @@ function AppForm() {
             : "Ricoh Hub chạy ẩn trên menu bar ngay khi bạn đăng nhập máy Mac."}
         </p>
       </div>
+
+      <SettingsHeading
+        title="Thông báo"
+        description="macOS báo khi máy in cần người. Mỗi sự cố chỉ báo một lần, lúc nó xuất hiện. Sự cố làm máy dừng, như kẹt giấy hay hết giấy, được báo thêm một lần khi đã ổn."
+      />
+      <div className="flex flex-col gap-4 rounded-lg border border-border p-5">
+        {NOTIFY_OPTIONS.map(({ key, label, hint }) => (
+          <label key={key} className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={settings.notify[key]}
+              onChange={(event) =>
+                update({ notify: { ...settings.notify, [key]: event.target.checked } })
+              }
+              className="mt-0.5 size-4 shrink-0 accent-primary dark:scheme-dark"
+            />
+            <span className="flex flex-col gap-0.5">
+              <span className="font-medium">{label}</span>
+              <span className="text-xs text-muted-foreground">{hint}</span>
+            </span>
+          </label>
+        ))}
+      </div>
       {error && <p className="animate-fade-in text-destructive">{error}</p>}
-    </div>
+    </>
   );
 }
 

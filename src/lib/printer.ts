@@ -7,6 +7,16 @@ export type PrinterSettings = {
   scanFolder: string | null;
   /** Start hidden in the menu bar at login; applied only by a packaged build. */
   launchAtLogin: boolean;
+  notify: NotifySettings;
+};
+
+/** Which macOS notifications to show. */
+export type NotifySettings = {
+  paper: boolean;
+  toner: boolean;
+  /** Paper jams, and doors, covers or trays left open. */
+  jam: boolean;
+  connection: boolean;
 };
 
 export type Tray = {

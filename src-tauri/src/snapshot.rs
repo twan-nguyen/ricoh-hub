@@ -26,7 +26,7 @@ const COUNTER_VALUES: &[u64] = &[1, 3, 6, 1, 4, 1, 367, 3, 2, 1, 2, 19, 5, 1, 9]
 #[serde(rename_all = "camelCase")]
 pub struct Snapshot {
     host: String,
-    model: Option<String>,
+    pub(crate) model: Option<String>,
     name: Option<String>,
     serial: Option<String>,
     firmware: Option<String>,
@@ -40,24 +40,47 @@ pub struct Snapshot {
     display: Option<String>,
     /// Black toner left, in percent; Ricoh reports it in steps.
     pub(crate) toner: Option<i32>,
-    trays: Vec<Tray>,
+    pub(crate) trays: Vec<Tray>,
     counters: Vec<Counter>,
     jobs: Vec<Job>,
+}
+
+#[cfg(test)]
+impl Snapshot {
+    /// A printer as other modules' tests need it: only the parts they look at are filled in.
+    pub(crate) fn for_test(reasons: Vec<String>, toner: Option<i32>, trays: Vec<Tray>) -> Self {
+        Self {
+            host: "192.168.1.103".into(),
+            model: Some("RICOH IM 3500".into()),
+            name: None,
+            serial: None,
+            firmware: None,
+            uptime_seconds: None,
+            state: 3,
+            reasons,
+            alerts: Vec::new(),
+            display: None,
+            toner,
+            trays,
+            counters: Vec::new(),
+            jobs: Vec::new(),
+        }
+    }
 }
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Tray {
-    name: String,
-    manual: bool,
+    pub(crate) name: String,
+    pub(crate) manual: bool,
     /// Paper size in millimetres, short edge first.
-    width_mm: i64,
-    height_mm: i64,
-    capacity: i64,
+    pub(crate) width_mm: i64,
+    pub(crate) height_mm: i64,
+    pub(crate) capacity: i64,
     /// Sheets left; -2 unknown, -3 "some" (RFC 3805).
-    level: i64,
+    pub(crate) level: i64,
     /// Low bits of PrtSubUnitStatus: 0, 2, 4, 6 available; 1, 3, 5 not.
-    available: bool,
+    pub(crate) available: bool,
 }
 
 #[derive(Clone, Serialize)]

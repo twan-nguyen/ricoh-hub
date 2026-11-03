@@ -83,6 +83,29 @@ cd src-tauri/icons/tray
 for f in ok warning error offline; do rsvg-convert $f.svg -o $f.png; done
 ```
 
+## Thông báo
+
+`src-tauri/src/notifications.rs` so sánh mỗi lần đọc với lần trước, rồi gửi thông báo macOS qua `tauri-plugin-notification`. Bật/tắt từng loại ở **Cài đặt › Chung**, mục Thông báo.
+
+| Loại | Báo khi | Báo "đã ổn" |
+|---|---|---|
+| Giấy | Một khay hết giấy, hoặc còn ≤ 15% sức chứa (cùng ngưỡng với thẻ Khay giấy). Khay tay không tính | Khay hết giấy đã có giấy |
+| Mực | Hết hoặc sắp hết mực (≤ 10% hoặc máy báo `toner-low`); hộp mực thải sắp đầy hoặc đã đầy | Hết mực, hộp thải đầy |
+| Kẹt giấy, cửa mở | `media-jam`, `door-open`/`cover-open`, `input-tray-missing` | Cả ba |
+| Mất kết nối | 3 lần đọc lỗi liên tiếp, chỉ khi đã từng đọc được máy từ lúc mở app | Kết nối lại |
+
+- Mỗi sự cố chỉ báo một lần, lúc nó xuất hiện. Khi mở app, chỉ báo những sự cố làm máy dừng (hết giấy, kẹt, cửa mở, hết mực…). Cảnh báo như "sắp hết" không bị nhắc lại mỗi lần đăng nhập.
+- Máy Mac mang ra khỏi văn phòng sẽ không báo mất kết nối, vì từ lúc mở app chưa từng đọc được máy in.
+- Đổi địa chỉ máy in thì bắt đầu so sánh lại từ đầu.
+- Bản dev gửi thông báo dưới tên và icon của Terminal (do plugin quy định). Bản đóng gói dùng tên Ricoh Hub, và macOS hỏi quyền ở lần báo đầu tiên.
+
+Xem máy in thật đang có sự cố nào và lúc mở app sẽ báo gì (không gửi thông báo):
+
+```bash
+cd src-tauri
+RICOH_HOST=192.168.1.103 cargo test live_launch_notices -- --ignored --nocapture
+```
+
 ## Biểu đồ
 
 Biểu đồ ở trang Tổng quan lấy từ [EvilCharts](https://github.com/legions-developer/evilcharts), bản Recharts, cài bằng shadcn CLI. Code nằm ở `src/components/evilcharts/` và được phép sửa trực tiếp.

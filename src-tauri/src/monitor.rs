@@ -2,9 +2,11 @@ use std::{sync::Mutex, time::Duration};
 
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager, State};
+use tauri_plugin_notification::NotificationExt;
 use tokio::sync::Notify;
 
 use crate::{
+    notifications::Tracker,
     settings::{PrinterSettings, Settings},
     snapshot::{self, Snapshot},
     tray,
@@ -33,6 +35,7 @@ pub struct Status {
 pub struct Monitor {
     status: Mutex<Status>,
     wake: Notify,
+    tracker: Mutex<Tracker>,
 }
 
 impl Monitor {
@@ -56,6 +59,8 @@ impl Monitor {
                 ..Status::default()
             }
         });
+        // The new printer's problems are news; the old printer's are not.
+        *self.tracker.lock().unwrap() = Tracker::default();
         self.refresh();
     }
 
@@ -90,6 +95,7 @@ pub fn start(app: AppHandle) {
             let result = snapshot::read_snapshot(settings.clone()).await;
 
             if same_printer(&settings, &app.state::<Settings>().get()) {
+                let notices = monitor.tracker.lock().unwrap().observe(result.as_ref().map_err(String::as_str));
                 monitor.update(&app, |s| {
                     s.reading = false;
                     match result {
@@ -101,6 +107,10 @@ pub fn start(app: AppHandle) {
                         Err(error) => s.error = Some(error),
                     }
                 });
+                let title = monitor.status().snapshot.and_then(|s| s.model).unwrap_or_else(|| "Ricoh Hub".into());
+                for notice in notices.into_iter().filter(|n| n.kind.wanted(&settings.notify)) {
+                    let _ = app.notification().builder().title(&title).body(notice.text).show();
+                }
             } else {
                 // The address changed mid-read; this reading belongs to the old printer.
                 monitor.update(&app, |s| s.reading = false);

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, State};
 use tauri_plugin_autostart::ManagerExt;
 
-use crate::monitor::Monitor;
+use crate::{monitor::Monitor, notifications::NotifySettings};
 
 /// Where the printer lives on the network. Kept in the app's config folder.
 #[derive(Clone, Serialize, Deserialize)]
@@ -18,6 +18,8 @@ pub struct PrinterSettings {
     /// Start hidden in the menu bar when the user logs in to the Mac.
     #[serde(default = "on")]
     pub launch_at_login: bool,
+    #[serde(default)]
+    pub notify: NotifySettings,
 }
 
 fn on() -> bool {
@@ -32,6 +34,7 @@ impl Default for PrinterSettings {
             community: "public".into(),
             scan_folder: None,
             launch_at_login: true,
+            notify: NotifySettings::default(),
         }
     }
 }
@@ -87,6 +90,7 @@ pub fn save_settings(
         community: next.community.trim().to_string(),
         scan_folder: next.scan_folder.map(|f| f.trim().to_string()).filter(|f| !f.is_empty()),
         launch_at_login: next.launch_at_login,
+        notify: next.notify,
     };
     if next.host.is_empty() {
         return Err("Hãy nhập địa chỉ máy in.".into());
