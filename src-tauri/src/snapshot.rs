@@ -41,7 +41,7 @@ pub struct Snapshot {
     /// Black toner left, in percent; Ricoh reports it in steps.
     pub(crate) toner: Option<i32>,
     pub(crate) trays: Vec<Tray>,
-    counters: Vec<Counter>,
+    pub(crate) counters: Vec<Counter>,
     jobs: Vec<Job>,
 }
 
@@ -87,8 +87,8 @@ pub struct Tray {
 #[serde(rename_all = "camelCase")]
 pub struct Counter {
     index: u64,
-    name: String,
-    value: i64,
+    pub(crate) name: String,
+    pub(crate) value: i64,
 }
 
 /// Parses one `printer-input-tray` value: `type=…;mediafeed=210000;…;name=Tray 1;`.
@@ -138,7 +138,7 @@ struct SnmpPart {
     serial: Option<String>,
     display: Option<String>,
     alerts: Vec<String>,
-    counters: Vec<Counter>,
+    pub(crate) counters: Vec<Counter>,
 }
 
 async fn read_snmp(host: &str, community: &str) -> Result<SnmpPart, String> {

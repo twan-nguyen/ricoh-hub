@@ -19,7 +19,7 @@ import {
 } from "@/lib/printer";
 import { errorMessage } from "@/lib/utils";
 
-export type View = "overview" | "print" | "scan" | "jobs" | "counters" | "settings";
+export type View = "overview" | "print" | "scan" | "jobs" | "counters" | "stats" | "settings";
 
 export type ScanFile = { path: string; bytes: number };
 

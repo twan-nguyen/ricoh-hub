@@ -106,6 +106,23 @@ cd src-tauri
 RICOH_HOST=192.168.1.103 cargo test live_launch_notices -- --ignored --nocapture
 ```
 
+## Lịch sử và thống kê
+
+`src-tauri/src/history.rs` ghi bộ đếm vào SQLite (`rusqlite`, feature `bundled`) ở `~/Library/Application Support/com.ricohhub.desktop/history.db`. Màn **Thống kê** (`src/components/stats-view.tsx`) vẽ số trang theo ngày và mức mực; Tổng quan có thêm dòng "Hôm nay".
+
+- Bảng `readings(host, at, total, print, copy, fax, scanned, duplex, large, toner)`; `at` là mili giây từ epoch. Mỗi máy in (theo `host`) có lịch sử riêng.
+- Một dòng được ghi khi có số đổi, và ít nhất 15 phút một lần khi app chạy, kể cả lúc ẩn trên menu bar. Khoảng vài chục nghìn dòng mỗi năm, vài MB.
+- Số trang của một ngày = lần đọc cuối của ngày đó trừ lần đọc cuối trước đó. Bộ đếm giảm (bị reset) thì ngày đó tính 0.
+- Ngày app không chạy thì không có cột. Số trang của những ngày đó dồn vào ngày app chạy lại, và cột đó có dấu `*`. Ngày đầu tiên app chạy chỉ tính từ lần đọc đầu tiên, cũng có dấu `*`.
+- Khoảng thời gian: 7 ngày, 30 ngày (theo ngày), hoặc 12 tháng (theo tháng). Ngày tính theo múi giờ của máy Mac.
+- Ba ngày đầu, màn Thống kê ghi rõ "Đang thu thập số liệu".
+- Sao lưu: chép file `history.db` khi app đã thoát. Xóa file này thì chỉ mất lịch sử; phần còn lại của app vẫn chạy bình thường.
+
+```bash
+sqlite3 ~/Library/Application\ Support/com.ricohhub.desktop/history.db \
+  "SELECT datetime(at/1000,'unixepoch','localtime'), total, toner FROM readings ORDER BY at DESC LIMIT 5"
+```
+
 ## Biểu đồ
 
 Biểu đồ ở trang Tổng quan lấy từ [EvilCharts](https://github.com/legions-developer/evilcharts), bản Recharts, cài bằng shadcn CLI. Code nằm ở `src/components/evilcharts/` và được phép sửa trực tiếp.
@@ -115,6 +132,7 @@ pnpm shadcn add @evilcharts/recharts-radial-chart   # registry khai báo trong c
 ```
 
 - Nửa vòng tròn cho mức mực và donut chia số trang (In / Photocopy / Fax) nằm ở `src/components/overview-charts.tsx`. Khay giấy vẫn dùng thanh ngang, vì so sánh các khay bằng thanh dễ hơn bằng vòng tròn.
+- Màn Thống kê dùng biểu đồ cột (`recharts-bar-chart`) và đường (`recharts-line-chart`). Bản tải về import thừa kiểu `EvilBrushRange` làm `tsc` báo lỗi; đã xóa import đó, nhớ xóa lại nếu tải đè bằng `pnpm shadcn add`.
 - Màu truyền vào là token của app (`var(--success)`, `var(--primary)`…), nên biểu đồ tự đổi theo nền sáng hoặc tối.
 - Recharts và motion đẩy file JS lên khoảng 900 KB (gzip khoảng 280 KB). Vì vậy Vite báo chunk lớn hơn 500 KB. Với app desktop nạp file từ đĩa thì không đáng lo.
 

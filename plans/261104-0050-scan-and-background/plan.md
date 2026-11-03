@@ -1,8 +1,8 @@
 # Scan, chạy nền, thông báo và lịch sử
 
-Trạng thái: **A, B và C đã xong, chờ thử thật**; D chưa bắt đầu. Tiếp nối [lộ trình](../261104-0035-feature-roadmap/plan.md), các mục #3 → #6.
+Trạng thái: **cả bốn giai đoạn đã xong, chờ thử thật**. Tiếp nối [lộ trình](../261104-0035-feature-roadmap/plan.md), các mục #3 → #6.
 
-Nền: `main` có bản xem trạng thái (`ed34430`). Các nhánh nối tiếp nhau: `feat/print-jobs` (in và hủy lệnh in) → `feat/scan` (A) → `feat/menu-bar` (B) → `feat/notifications` (C). In, scan, menu bar và thông báo đều chưa thử với máy thật; bạn sẽ tự thử.
+Nền: `main` có bản xem trạng thái (`ed34430`). Các nhánh nối tiếp nhau: `feat/print-jobs` (in và hủy lệnh in) → `feat/scan` (A) → `feat/menu-bar` (B) → `feat/notifications` (C) → `feat/history` (D). In, scan, menu bar, thông báo và thống kê đều chưa thử với máy thật; bạn sẽ tự thử.
 
 ## Kết quả mong muốn
 

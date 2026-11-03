@@ -1,6 +1,7 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import {
   ArrowLeft,
+  ChartColumn,
   ChevronsUpDown,
   ExternalLink,
   FileUp,
@@ -90,6 +91,12 @@ function AppNav() {
             label="Bộ đếm"
             active={view === "counters"}
             onClick={() => setView("counters")}
+          />
+          <NavItem
+            icon={<ChartColumn />}
+            label="Thống kê"
+            active={view === "stats"}
+            onClick={() => setView("stats")}
           />
         </Section>
       </nav>

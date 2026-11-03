@@ -31,6 +31,8 @@ roxmltree = "0.21"
 jiff = "0.2"
 tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
+# bundled: SQLite is compiled in rather than taken from the system.
+rusqlite = { version = "0.41.1", features = ["bundled"] }
 
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]

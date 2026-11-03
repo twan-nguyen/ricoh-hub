@@ -1,5 +1,6 @@
 use tauri::{Manager, RunEvent, WindowEvent};
 
+mod history;
 mod monitor;
 mod notifications;
 mod printer_ipp;
@@ -32,6 +33,7 @@ pub fn run() {
                 eprintln!("{error}");
             }
             app.manage(settings);
+            app.manage(history::History::open(&app.path().app_data_dir()?.join("history.db"))?);
             tray::create(app.handle())?;
             monitor::start(app.handle().clone());
             if std::env::args().any(|arg| arg == HIDDEN_ARG) {
@@ -54,6 +56,8 @@ pub fn run() {
             settings::save_settings,
             monitor::get_status,
             monitor::refresh_printer,
+            history::get_history,
+            history::get_pages_today,
             printing::print_file,
             printing::cancel_job,
             scanning::get_scanner,

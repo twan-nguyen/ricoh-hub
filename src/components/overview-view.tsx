@@ -1,5 +1,6 @@
 import { openUrl } from "@tauri-apps/plugin-opener";
 import { ArrowRight, ExternalLink, LayoutDashboard } from "lucide-react";
+import { useEffect, useState } from "react";
 
 import { type PageSlice, PagesDonut, TonerGauge } from "@/components/overview-charts";
 import { Panel, PanelHeader } from "@/components/panel";
@@ -11,6 +12,7 @@ import {
   type StatusTone,
   counterLabel,
   formatNumber,
+  formatSince,
   formatUptime,
   issues,
   keyCounters,
@@ -22,7 +24,7 @@ import {
   trayStatus,
   wasteStatus,
 } from "@/lib/format";
-import type { Snapshot, Tray } from "@/lib/printer";
+import { type Bucket, type Snapshot, type Tray, getPagesToday } from "@/lib/printer";
 import { cn } from "@/lib/utils";
 import { useStore } from "@/store";
 
@@ -249,6 +251,7 @@ function CountersSection({ snapshot }: { snapshot: Snapshot }) {
         </button>
       }
     >
+      <PagesToday />
       {slices.length > 0 && (
         <div className="flex items-center gap-5 px-4 py-4">
           <PagesDonut slices={slices} total={counters.total} />
@@ -316,5 +319,35 @@ function DeviceSection({ snapshot }: { snapshot: Snapshot }) {
         </Button>
       </div>
     </Section>
+  );
+}
+
+/** Today's pages from the readings the app keeps; read again after each reading of the printer. */
+function PagesToday() {
+  const { updatedAt, setView } = useStore();
+  const [today, setToday] = useState<Bucket | null>(null);
+
+  useEffect(() => {
+    getPagesToday().then(setToday, () => setToday(null));
+  }, [updatedAt]);
+
+  if (today?.total == null) return null;
+  return (
+    <button
+      onClick={() => setView("stats")}
+      title="Xem thống kê theo ngày"
+      className="flex items-baseline justify-between gap-4 px-4 py-3 text-left transition-colors duration-100 hover:bg-accent/50"
+    >
+      <span className="text-muted-foreground">
+        Hôm nay
+        {today.since !== null && (
+          <span className="text-xs text-muted-foreground/70"> · {formatSince(today.since, Date.now())}</span>
+        )}
+      </span>
+      <span className="flex items-baseline gap-1">
+        <span className="text-lg font-semibold tabular-nums">{formatNumber(today.total)}</span>
+        <span className="text-muted-foreground">trang</span>
+      </span>
+    </button>
   );
 }

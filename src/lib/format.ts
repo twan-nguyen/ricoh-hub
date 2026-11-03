@@ -43,6 +43,27 @@ export function formatUptime(seconds: number) {
   return `${minutes} phút`;
 }
 
+/** Where a count starts: "từ 08:15" today, "từ 02/11" on an earlier day. */
+export function formatSince(at: number, now: number) {
+  const date = new Date(at);
+  if (date.toDateString() === new Date(now).toDateString()) {
+    return `từ ${date.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })}`;
+  }
+  return `từ ${formatDayMonth(date)}`;
+}
+
+/** "03/11"; spelled out, since browsers disagree on the separator for vi-VN. */
+export function formatDayMonth(date: Date) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(date.getDate())}/${pad(date.getMonth() + 1)}`;
+}
+
+/** "2026-11-04" → "04/11"; a month, "2026-11" → "11/2026". */
+export function formatBucketDate(date: string) {
+  const [year, month, day] = date.split("-");
+  return day ? `${day}/${month}` : `${month}/${year}`;
+}
+
 export function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("vi-VN", {
     hour: "2-digit",

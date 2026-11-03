@@ -6,6 +6,7 @@ use tauri_plugin_notification::NotificationExt;
 use tokio::sync::Notify;
 
 use crate::{
+    history::History,
     notifications::Tracker,
     settings::{PrinterSettings, Settings},
     snapshot::{self, Snapshot},
@@ -95,6 +96,11 @@ pub fn start(app: AppHandle) {
             let result = snapshot::read_snapshot(settings.clone()).await;
 
             if same_printer(&settings, &app.state::<Settings>().get()) {
+                if let Ok(snapshot) = &result
+                    && let Err(error) = app.state::<History>().record(&settings.host, snapshot)
+                {
+                    eprintln!("Không ghi được lịch sử: {error}");
+                }
                 let notices = monitor.tracker.lock().unwrap().observe(result.as_ref().map_err(String::as_str));
                 monitor.update(&app, |s| {
                     s.reading = false;

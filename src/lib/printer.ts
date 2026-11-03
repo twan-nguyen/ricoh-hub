@@ -90,6 +90,35 @@ export type PrinterStatus = {
   reading: boolean;
 };
 
+/** Pages for one day, or one month in the yearly view. Counts are null when the app read nothing then. */
+export type Bucket = {
+  /** "2026-11-04", or "2026-11" for a month. */
+  date: string;
+  total: number | null;
+  print: number | null;
+  copy: number | null;
+  fax: number | null;
+  /** The last toner level read that day. */
+  toner: number | null;
+  /**
+   * Set when the count does not start at the previous day's close: it runs from
+   * the last reading before days the app was off, or from the day's first reading.
+   */
+  since: number | null;
+};
+
+export type HistoryRange = "week" | "month" | "year";
+
+export type HistoryView = {
+  buckets: Bucket[];
+  /** The first reading kept for this printer. */
+  firstAt: number | null;
+};
+
+export const getHistory = (range: HistoryRange) => invoke<HistoryView>("get_history", { range });
+
+export const getPagesToday = () => invoke<Bucket>("get_pages_today");
+
 export const getStatus = () => invoke<PrinterStatus>("get_status");
 
 /** Reads the printer now instead of at the next tick; the result comes as a `printer-status` event. */

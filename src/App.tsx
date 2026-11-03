@@ -7,6 +7,7 @@ import { OverviewView } from "@/components/overview-view";
 import { PrintView } from "@/components/print-view";
 import { ScanView } from "@/components/scan-view";
 import { SettingsView } from "@/components/settings-view";
+import { StatsView } from "@/components/stats-view";
 import { Sidebar } from "@/components/sidebar";
 import { type View, useStore } from "@/store";
 
@@ -16,6 +17,7 @@ const VIEWS: Record<View, () => React.ReactNode> = {
   scan: () => <ScanView />,
   jobs: () => <JobsView />,
   counters: () => <CountersView />,
+  stats: () => <StatsView />,
   settings: () => <SettingsView />,
 };
 
