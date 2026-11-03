@@ -1,3 +1,4 @@
+import { open } from "@tauri-apps/plugin-dialog";
 import { Check, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -5,6 +6,7 @@ import { Panel, PanelHeader } from "@/components/panel";
 import { SettingsHeading } from "@/components/settings-heading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { getScanFolder } from "@/lib/printer";
 import { errorMessage } from "@/lib/utils";
 import { useStore } from "@/store";
 
@@ -35,6 +37,9 @@ function PrinterForm() {
   const { settings, saveSettings } = useStore();
   const [host, setHost] = useState("");
   const [community, setCommunity] = useState("");
+  const [scanFolder, setScanFolder] = useState<string | null>(null);
+  // The folder scans go to when none is chosen, shown so the default is not a mystery.
+  const [defaultFolder, setDefaultFolder] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -43,9 +48,26 @@ function PrinterForm() {
     if (!settings) return;
     setHost(settings.host);
     setCommunity(settings.community);
+    setScanFolder(settings.scanFolder);
+    if (!settings.scanFolder) getScanFolder().then(setDefaultFolder, () => setDefaultFolder(null));
   }, [settings]);
 
-  const changed = settings && (host !== settings.host || community !== settings.community);
+  const changed =
+    settings &&
+    (host !== settings.host || community !== settings.community || scanFolder !== settings.scanFolder);
+
+  async function pickFolder() {
+    const picked = await open({
+      directory: true,
+      multiple: false,
+      title: "Chọn thư mục lưu file scan",
+      defaultPath: scanFolder ?? defaultFolder ?? undefined,
+    });
+    if (picked) {
+      setScanFolder(picked);
+      setSaved(false);
+    }
+  }
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -53,7 +75,7 @@ function PrinterForm() {
     setError(null);
     setSaved(false);
     try {
-      await saveSettings({ host, community });
+      await saveSettings({ host, community, scanFolder });
       setSaved(true);
     } catch (err) {
       setError(errorMessage(err));
@@ -98,6 +120,37 @@ function PrinterForm() {
           autoComplete="off"
           className="font-mono"
         />
+      </Field>
+
+      <Field
+        id="scan-folder"
+        label="Thư mục lưu file scan"
+        hint="File scan được lưu thẳng vào đây, tên theo giờ scan."
+      >
+        <div className="flex items-center gap-2">
+          <span
+            id="scan-folder"
+            className="flex h-8 min-w-0 flex-1 items-center truncate rounded-lg border border-input px-2.5 font-mono text-muted-foreground select-text"
+            title={scanFolder ?? defaultFolder ?? undefined}
+          >
+            {scanFolder ?? defaultFolder ?? "Downloads/Ricoh Scans"}
+          </span>
+          <Button type="button" variant="outline" onClick={pickFolder}>
+            Chọn…
+          </Button>
+          {scanFolder && (
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setScanFolder(null);
+                setSaved(false);
+              }}
+            >
+              Dùng mặc định
+            </Button>
+          )}
+        </div>
       </Field>
 
       <div className="flex items-center gap-3">

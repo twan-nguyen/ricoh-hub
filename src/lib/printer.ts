@@ -1,8 +1,10 @@
-import { invoke } from "@tauri-apps/api/core";
+import { Channel, invoke } from "@tauri-apps/api/core";
 
 export type PrinterSettings = {
   host: string;
   community: string;
+  /** Where scans are saved; null means Downloads/Ricoh Scans. */
+  scanFolder: string | null;
 };
 
 export type Tray = {
@@ -71,6 +73,59 @@ export const printFile = (path: string, options: PrintOptions) =>
   invoke<SubmittedJob>("print_file", { path, options });
 
 export const cancelJob = (jobId: number) => invoke<void>("cancel_job", { jobId });
+
+/** What the scanner offers, read from eSCL ScannerCapabilities. */
+export type ScannerCapabilities = {
+  version: string;
+  hasFeeder: boolean;
+  feederDuplex: boolean;
+  colorModes: string[];
+  resolutions: number[];
+  formats: string[];
+  maxWidthMm: number;
+  maxHeightMm: number;
+};
+
+export type ScannerStatus = {
+  /** Idle, Processing, Testing or Stopped. */
+  state: string;
+  /** ScannerAdfLoaded, ScannerAdfEmpty, ScannerAdfJam…; null without a feeder. */
+  adfState: string | null;
+};
+
+export type ScanSource = "Platen" | "Feeder";
+export type ColorMode = "BlackAndWhite1" | "Grayscale8" | "RGB24";
+export type ScanFormat = "application/pdf" | "image/jpeg";
+
+export type ScanOptions = {
+  source: ScanSource;
+  duplex: boolean;
+  colorMode: ColorMode;
+  resolution: number;
+  widthMm: number;
+  heightMm: number;
+  format: ScanFormat;
+};
+
+export type ScanEvent = { kind: "started" } | { kind: "saved"; path: string; bytes: number };
+
+export const getScanner = () => invoke<ScannerCapabilities>("get_scanner");
+
+export const getScannerStatus = () => invoke<ScannerStatus>("get_scanner_status");
+
+export const getScanFolder = () => invoke<string>("get_scan_folder");
+
+export function startScan(options: ScanOptions, onEvent: (event: ScanEvent) => void) {
+  const onProgress = new Channel<ScanEvent>();
+  onProgress.onmessage = onEvent;
+  return invoke<string[]>("start_scan", { options, onProgress });
+}
+
+export const cancelScan = () => invoke<void>("cancel_scan");
+
+export const openScan = (path: string) => invoke<void>("open_scan", { path });
+
+export const revealScan = (path: string) => invoke<void>("reveal_scan", { path });
 
 export const getSettings = () => invoke<PrinterSettings>("get_settings");
 

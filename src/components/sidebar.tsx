@@ -9,6 +9,7 @@ import {
   ListOrdered,
   Printer,
   RotateCw,
+  ScanLine,
   Settings,
 } from "lucide-react";
 
@@ -71,6 +72,12 @@ function AppNav() {
             label="In tài liệu"
             active={view === "print"}
             onClick={() => setView("print")}
+          />
+          <NavItem
+            icon={<ScanLine />}
+            label="Scan"
+            active={view === "scan"}
+            onClick={() => setView("scan")}
           />
           <NavItem
             icon={<ListOrdered />}

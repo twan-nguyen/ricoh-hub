@@ -19,6 +19,12 @@ const numbers = new Intl.NumberFormat("vi-VN");
 /** 61188 → "61.188", as Vietnamese readers group digits. */
 export const formatNumber = (value: number) => numbers.format(value);
 
+/** File sizes as Finder shows them: "820 KB", "2,4 MB". */
+export function formatBytes(bytes: number) {
+  if (bytes < 1000 * 1000) return `${Math.max(1, Math.round(bytes / 1000))} KB`;
+  return `${(bytes / 1000 / 1000).toLocaleString("vi-VN", { maximumFractionDigits: 1 })} MB`;
+}
+
 /** "vừa xong", "12 giây trước", "3 phút trước". */
 export function formatAgo(at: number, now: number) {
   const seconds = Math.max(0, Math.floor((now - at) / 1000));

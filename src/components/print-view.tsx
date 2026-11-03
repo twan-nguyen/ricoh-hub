@@ -2,6 +2,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { CircleCheck, FileText, FileUp, Minus, Plus, Printer, X } from "lucide-react";
 import { useState } from "react";
 
+import { Field, Segmented } from "@/components/form-controls";
 import { Panel, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -278,64 +279,5 @@ function TrayHint({ source, tray }: { source: TraySource; tray: Tray | undefined
       {trayName(tray)}: {status.label.toLowerCase()}
       {left}.
     </span>
-  );
-}
-
-function Field({
-  label,
-  htmlFor,
-  hint,
-  children,
-}: {
-  label: string;
-  htmlFor?: string;
-  hint?: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      {htmlFor ? (
-        <label htmlFor={htmlFor} className="font-medium">
-          {label}
-        </label>
-      ) : (
-        <span className="font-medium">{label}</span>
-      )}
-      {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function Segmented<T extends string>({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: T;
-  options: { value: T; label: string }[];
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      aria-label={label}
-      className="flex w-fit max-w-full flex-wrap gap-0.5 rounded-lg border border-border p-0.5"
-    >
-      {options.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          role="radio"
-          aria-checked={value === option.value}
-          onClick={() => onChange(option.value)}
-          className="h-7 rounded-md px-2.5 text-muted-foreground transition-colors duration-100 hover:text-foreground aria-checked:bg-accent aria-checked:text-foreground"
-        >
-          {option.label}
-        </button>
-      ))}
-    </div>
   );
 }

@@ -9,6 +9,9 @@ use tauri::State;
 pub struct PrinterSettings {
     pub host: String,
     pub community: String,
+    /// Where scans are saved; none means Downloads/Ricoh Scans.
+    #[serde(default)]
+    pub scan_folder: Option<String>,
 }
 
 impl Default for PrinterSettings {
@@ -17,6 +20,7 @@ impl Default for PrinterSettings {
         Self {
             host: "192.168.1.103".into(),
             community: "public".into(),
+            scan_folder: None,
         }
     }
 }
@@ -64,11 +68,13 @@ pub fn get_settings(settings: State<'_, Settings>) -> PrinterSettings {
 pub fn save_settings(
     host: String,
     community: String,
+    scan_folder: Option<String>,
     settings: State<'_, Settings>,
 ) -> Result<PrinterSettings, String> {
     let next = PrinterSettings {
         host: host.trim().to_string(),
         community: community.trim().to_string(),
+        scan_folder: scan_folder.map(|f| f.trim().to_string()).filter(|f| !f.is_empty()),
     };
     if next.host.is_empty() {
         return Err("Hãy nhập địa chỉ máy in.".into());

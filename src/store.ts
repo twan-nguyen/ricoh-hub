@@ -3,17 +3,22 @@ import { create } from "zustand";
 import {
   type PrintOptions,
   type PrinterSettings,
+  type ScanOptions,
   type Snapshot,
   type SubmittedJob,
   cancelJob,
+  cancelScan,
   getSettings,
   getSnapshot,
   printFile,
   saveSettings,
+  startScan,
 } from "@/lib/printer";
 import { errorMessage } from "@/lib/utils";
 
-export type View = "overview" | "print" | "jobs" | "counters" | "settings";
+export type View = "overview" | "print" | "scan" | "jobs" | "counters" | "settings";
+
+export type ScanFile = { path: string; bytes: number };
 
 /** How often the printer is asked again while the window is open. */
 const REFRESH_MS = 10_000;
@@ -31,6 +36,11 @@ type State = {
   document: string | null;
   /** A file is being dragged over the window. */
   dragging: boolean;
+  /** Kept here so a scan carries on while another view is open. */
+  scanning: boolean;
+  /** Files saved by the running or the last scan. */
+  scanFiles: ScanFile[];
+  scanError: string | null;
 
   init: () => () => void;
   setView: (view: View) => void;
@@ -40,6 +50,8 @@ type State = {
   setDragging: (dragging: boolean) => void;
   print: (options: PrintOptions) => Promise<SubmittedJob>;
   cancelJob: (jobId: number) => Promise<void>;
+  scan: (options: ScanOptions) => Promise<void>;
+  cancelScan: () => Promise<void>;
 };
 
 export const useStore = create<State>()((set, get) => ({
@@ -51,6 +63,9 @@ export const useStore = create<State>()((set, get) => ({
   loading: false,
   document: null,
   dragging: false,
+  scanning: false,
+  scanFiles: [],
+  scanError: null,
 
   init() {
     getSettings().then((settings) => set({ settings }));
@@ -105,4 +120,22 @@ export const useStore = create<State>()((set, get) => ({
     await cancelJob(jobId);
     await get().refresh();
   },
+
+  async scan(options) {
+    if (get().scanning) return;
+    set({ scanning: true, scanFiles: [], scanError: null });
+    try {
+      await startScan(options, (event) => {
+        if (event.kind === "saved") {
+          set((s) => ({ scanFiles: [...s.scanFiles, { path: event.path, bytes: event.bytes }] }));
+        }
+      });
+    } catch (err) {
+      set({ scanError: errorMessage(err) });
+    } finally {
+      set({ scanning: false });
+    }
+  },
+
+  cancelScan: () => cancelScan(),
 }));

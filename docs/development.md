@@ -48,6 +48,25 @@ RICOH_HOST=192.168.1.103 cargo test live_ -- --ignored --skip live_snapshot
 
 `live_validate_prints_nothing` gửi Validate-Job với đủ tùy chọn. `live_cancel_unknown_job_is_not_found` hủy một mã lệnh không tồn tại.
 
+## Scan
+
+`src-tauri/src/scanning.rs` nói chuyện với máy qua eSCL (`http://<host>/eSCL/`, HTTP + XML). Giao diện ở `src/components/scan-view.tsx`.
+
+- Luồng: `POST /eSCL/ScanJobs` gửi `ScanSettings`, lấy job từ header `Location`. Sau đó gọi lặp `GET {job}/NextDocument`; mỗi lần trả về 200 là một file, 404 là hết, 503 thì chờ rồi hỏi lại. Hủy bằng `DELETE {job}`.
+- Tùy chọn được kiểm tra trước với `ScannerCapabilities`: nguồn, 2 mặt (chỉ ADF), màu, dpi, định dạng, khổ. Vùng scan tính theo đơn vị 1/300 inch.
+- Khi chọn khay nạp, app đọc `ScannerStatus.AdfState` trước khi scan, và cứ 3 giây đọc lại một lần khi màn Scan đang mở.
+- File lưu vào `~/Downloads/Ricoh Scans`, hoặc thư mục chọn ở Cài đặt. Tên file theo giờ scan, ví dụ `Scan 2026-11-04 01.30.12.pdf`. Job trả nhiều file thì thêm ` (2)`, ` (3)`…
+- Lệnh `open_scan` và `reveal_scan` chỉ mở file nằm trong thư mục scan.
+- `src-tauri/src/fixtures/` chứa XML thật của máy (đã ẩn serial, UUID) cho unit test.
+
+Test với máy thật:
+
+```bash
+cd src-tauri
+RICOH_HOST=192.168.1.103 cargo test live_scanner -- --ignored --nocapture        # chỉ đọc
+RICOH_SCAN=1 cargo test live_scan_glass -- --ignored --nocapture                 # scan mặt kính 1 lần
+```
+
 ## Biểu đồ
 
 Biểu đồ ở trang Tổng quan lấy từ [EvilCharts](https://github.com/legions-developer/evilcharts), bản Recharts, cài bằng shadcn CLI. Code nằm ở `src/components/evilcharts/` và được phép sửa trực tiếp.
