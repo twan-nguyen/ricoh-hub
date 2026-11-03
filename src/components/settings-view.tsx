@@ -1,0 +1,139 @@
+import { Check, Settings } from "lucide-react";
+import { useEffect, useState } from "react";
+
+import { Panel, PanelHeader } from "@/components/panel";
+import { SettingsHeading } from "@/components/settings-heading";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { errorMessage } from "@/lib/utils";
+import { useStore } from "@/store";
+
+export function SettingsView() {
+  return (
+    <Panel>
+      <PanelHeader>
+        <Settings className="size-4 text-muted-foreground" />
+        <span className="text-muted-foreground">Cài đặt</span>
+        <span className="text-muted-foreground/60">/</span>
+        <h1 className="font-medium">Máy in</h1>
+      </PanelHeader>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <section className="mx-auto flex max-w-2xl animate-view-in flex-col gap-6 px-8 py-12">
+          <SettingsHeading
+            title="Máy in"
+            description="Ricoh Hub đọc máy in qua SNMP và IPP ở địa chỉ này. Chỉ đọc, không đổi gì trên máy."
+          />
+          <PrinterForm />
+        </section>
+      </div>
+    </Panel>
+  );
+}
+
+function PrinterForm() {
+  const { settings, saveSettings } = useStore();
+  const [host, setHost] = useState("");
+  const [community, setCommunity] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!settings) return;
+    setHost(settings.host);
+    setCommunity(settings.community);
+  }, [settings]);
+
+  const changed = settings && (host !== settings.host || community !== settings.community);
+
+  async function submit(event: React.FormEvent) {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    setSaved(false);
+    try {
+      await saveSettings({ host, community });
+      setSaved(true);
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-5 rounded-lg border border-border p-5">
+      <Field
+        id="host"
+        label="Địa chỉ IP"
+        hint="Xem trên máy in ở mục Settings › Network, hoặc in trang cấu hình."
+      >
+        <Input
+          id="host"
+          value={host}
+          onChange={(e) => {
+            setHost(e.target.value);
+            setSaved(false);
+          }}
+          placeholder="192.168.1.103"
+          spellCheck={false}
+          autoComplete="off"
+          className="font-mono"
+        />
+      </Field>
+      <Field
+        id="community"
+        label="SNMP community"
+        hint="Để public nếu chưa ai đổi trên máy in. Chỉ dùng để đọc."
+      >
+        <Input
+          id="community"
+          value={community}
+          onChange={(e) => {
+            setCommunity(e.target.value);
+            setSaved(false);
+          }}
+          spellCheck={false}
+          autoComplete="off"
+          className="font-mono"
+        />
+      </Field>
+
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={busy || !changed}>
+          {busy ? "Đang lưu…" : "Lưu và đọc lại"}
+        </Button>
+        {saved && (
+          <span className="flex animate-fade-in items-center gap-1.5 text-success">
+            <Check className="size-4" />
+            Đã lưu
+          </span>
+        )}
+      </div>
+      {error && <p className="animate-fade-in text-destructive">{error}</p>}
+    </form>
+  );
+}
+
+function Field({
+  id,
+  label,
+  hint,
+  children,
+}: {
+  id: string;
+  label: string;
+  hint: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label htmlFor={id} className="font-medium">
+        {label}
+      </label>
+      {children}
+      <p className="text-xs text-muted-foreground">{hint}</p>
+    </div>
+  );
+}

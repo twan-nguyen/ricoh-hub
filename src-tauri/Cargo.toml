@@ -1,0 +1,34 @@
+[package]
+name = "ricoh-hub"
+version = "0.1.0"
+description = "Desktop dashboard for a Ricoh IM 3500 on the office network"
+authors = ["Twan"]
+edition = "2024"
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+# This seems to be only an issue on Windows, see https://github.com/rust-lang/cargo/issues/8519
+name = "ricoh_hub_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["time", "macros", "net", "rt"] }
+ipp = { version = "8", default-features = false, features = ["async-client"] }
+# heap_buffers: the 64 KB receive buffer otherwise sits in the future and overflows the stack.
+snmp2 = { version = "0.5", default-features = false, features = ["tokio", "heap_buffers"] }
+
+# Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
