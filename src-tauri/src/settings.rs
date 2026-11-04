@@ -27,10 +27,10 @@ fn on() -> bool {
 }
 
 impl Default for PrinterSettings {
-    /// The office IM 3500 this app was built for; `public` is the factory read-only community.
+    /// No printer until the user connects one; `public` is the factory read-only community.
     fn default() -> Self {
         Self {
-            host: "192.168.1.103".into(),
+            host: String::new(),
             community: "public".into(),
             scan_folder: None,
             launch_at_login: true,
@@ -104,6 +104,22 @@ pub fn save_settings(
     if previous.host != next.host || previous.community != next.community {
         monitor.reset(&app);
     }
+    Ok(next)
+}
+
+/// Forgets the printer's address, so the window asks for one again.
+#[tauri::command]
+pub fn disconnect_printer(
+    app: AppHandle,
+    settings: State<'_, Settings>,
+    monitor: State<'_, Monitor>,
+) -> Result<PrinterSettings, String> {
+    let next = PrinterSettings {
+        host: String::new(),
+        ..settings.get()
+    };
+    settings.save(next.clone())?;
+    monitor.reset(&app);
     Ok(next)
 }
 

@@ -103,7 +103,8 @@ fn summary(status: &Status) -> (Look, String) {
     }
     match &status.snapshot {
         Some(snapshot) => printer_summary(snapshot.state, &snapshot.reasons, snapshot.toner),
-        None => (Look::Offline, "Đang đọc máy in…".into()),
+        None if status.reading => (Look::Offline, "Đang đọc máy in…".into()),
+        None => (Look::Offline, "Chưa kết nối máy in".into()),
     }
 }
 
@@ -211,5 +212,10 @@ mod tests {
             ..Status::default()
         };
         assert_eq!(summary(&status).0, Look::Offline);
+    }
+
+    #[test]
+    fn no_address_reads_not_connected() {
+        assert_eq!(summary(&Status::default()).1, "Chưa kết nối máy in");
     }
 }

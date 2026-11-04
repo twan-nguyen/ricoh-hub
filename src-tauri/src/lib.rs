@@ -54,6 +54,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             settings::get_settings,
             settings::save_settings,
+            settings::disconnect_printer,
             monitor::get_status,
             monitor::refresh_printer,
             history::get_history,

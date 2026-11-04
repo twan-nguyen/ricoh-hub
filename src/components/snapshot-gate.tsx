@@ -1,38 +1,13 @@
-import { RotateCw, Settings } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 import type { Snapshot } from "@/lib/printer";
 import { useStore } from "@/store";
 
 /**
- * Shows a view once the first snapshot has arrived. Until then: placeholder
- * blocks while loading, or why the printer could not be reached.
+ * Shows a view once the first snapshot has arrived. Until then, placeholder
+ * blocks sit under the connecting card, which also says why a printer cannot be reached.
  */
 export function SnapshotGate({ children }: { children: (snapshot: Snapshot) => React.ReactNode }) {
-  const { snapshot, error, loading, settings, refresh, setView } = useStore();
-
-  if (snapshot) return children(snapshot);
-  if (error && !loading) {
-    return (
-      <Empty
-        title={`Không kết nối được máy in${settings ? ` tại ${settings.host}` : ""}`}
-        detail={`Kiểm tra máy in đã bật và máy tính đang cùng mạng với máy in. Chi tiết: ${error}`}
-        action={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={refresh}>
-              <RotateCw />
-              Thử lại
-            </Button>
-            <Button variant="ghost" onClick={() => setView("settings")}>
-              <Settings />
-              Đổi địa chỉ máy in
-            </Button>
-          </div>
-        }
-      />
-    );
-  }
-  return <SkeletonBlocks />;
+  const snapshot = useStore((s) => s.snapshot);
+  return snapshot ? children(snapshot) : <SkeletonBlocks />;
 }
 
 export function Empty({

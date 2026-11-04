@@ -11,7 +11,9 @@ import {
   RotateCw,
   ScanLine,
   Settings,
+  Unplug,
 } from "lucide-react";
+import { useRef } from "react";
 
 import appIcon from "../../app-icon.svg";
 import { StatusIcon } from "@/components/status-icon";
@@ -110,9 +112,11 @@ function AppNav() {
 
 /** Sits at the foot of the sidebar, where ClusterSmith keeps its cluster switcher. */
 function PrinterMenu() {
-  const { snapshot, settings, error, refresh, setView } = useStore();
+  const { snapshot, settings, error, refresh, setView, disconnect } = useStore();
   const host = snapshot?.host ?? settings?.host;
   const tone = error ? "failed" : snapshot ? printerState(snapshot.state).tone : "unknown";
+  // Changing printer hands focus to the address field, not back to this menu's button.
+  const leaving = useRef(false);
 
   return (
     <DropdownMenu>
@@ -124,23 +128,46 @@ function PrinterMenu() {
           <StatusIcon tone={tone} />
           <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
             <span className="truncate">{snapshot?.name ?? "Máy in"}</span>
-            {host && <span className="truncate text-xs text-muted-foreground">{host}</span>}
+            {host ? (
+              <span className="truncate text-xs text-muted-foreground">{host}</span>
+            ) : (
+              <span className="truncate text-xs text-muted-foreground">Chưa kết nối</span>
+            )}
           </span>
           <ChevronsUpDown className="size-3.5 shrink-0 text-muted-foreground" />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-(--radix-dropdown-menu-trigger-width) min-w-56">
+      <DropdownMenuContent
+        side="top"
+        align="start"
+        className="w-(--radix-dropdown-menu-trigger-width) min-w-56"
+        onCloseAutoFocus={(event) => {
+          if (leaving.current) event.preventDefault();
+          leaving.current = false;
+        }}
+      >
         <DropdownMenuLabel>{snapshot?.model ?? "Máy in"}</DropdownMenuLabel>
-        <DropdownMenuItem onSelect={() => refresh()}>
-          <RotateCw />
-          Đọc lại máy in
-          <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
-        </DropdownMenuItem>
         {host && (
-          <DropdownMenuItem onSelect={() => openUrl(`http://${host}/`)}>
-            <ExternalLink />
-            Mở Web Image Monitor
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem onSelect={() => refresh()}>
+              <RotateCw />
+              Đọc lại máy in
+              <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => openUrl(`http://${host}/`)}>
+              <ExternalLink />
+              Mở Web Image Monitor
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                leaving.current = true;
+                disconnect();
+              }}
+            >
+              <Unplug />
+              Đổi máy in…
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => setView("settings")}>

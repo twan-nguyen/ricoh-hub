@@ -1,6 +1,8 @@
 import { getCurrentWebview } from "@tauri-apps/api/webview";
 import { useEffect } from "react";
 
+import { ConnectView } from "@/components/connect-view";
+import { ConnectingOverlay } from "@/components/connecting-overlay";
 import { CountersView } from "@/components/counters-view";
 import { JobsView } from "@/components/jobs-view";
 import { OverviewView } from "@/components/overview-view";
@@ -24,6 +26,8 @@ const VIEWS: Record<View, () => React.ReactNode> = {
 function App() {
   const init = useStore((s) => s.init);
   const view = useStore((s) => s.view);
+  // Settings stay reachable before a printer is connected; every other view needs one.
+  const unconnected = useStore((s) => s.settings !== null && !s.settings.host);
 
   useEffect(() => init(), [init]);
 
@@ -71,13 +75,16 @@ function App() {
   }, []);
 
   return (
-    // The gutter around the panel doubles as a window drag handle.
-    <div data-tauri-drag-region className="app-canvas flex h-screen py-2 pr-2">
-      <Sidebar />
-      <div key={view} className="flex min-w-0 flex-1 flex-col">
-        {VIEWS[view]()}
+    <>
+      {/* The gutter around the panel doubles as a window drag handle. */}
+      <div data-tauri-drag-region className="app-canvas flex h-screen py-2 pr-2">
+        <Sidebar />
+        <div key={view} className="flex min-w-0 flex-1 flex-col">
+          {unconnected && view !== "settings" ? <ConnectView /> : VIEWS[view]()}
+        </div>
       </div>
-    </div>
+      <ConnectingOverlay />
+    </>
   );
 }
 

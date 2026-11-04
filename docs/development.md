@@ -12,7 +12,16 @@ pnpm tauri build    # đóng gói .app / .dmg
 
 Phát hành qua Homebrew: xem [releasing.md](releasing.md).
 
-Địa chỉ máy in mặc định là `192.168.1.103` với SNMP community `public`. Đổi trong app ở **Cài đặt › Chung** (⌘,). Giá trị được lưu ở `settings.json` trong thư mục cấu hình của app (`~/Library/Application Support/com.ricohhub.desktop/`).
+App không có địa chỉ máy in mặc định. Lần đầu mở, app hiện màn **Kết nối máy in** để người dùng nhập IP; SNMP community điền sẵn `public`. Khi chưa có địa chỉ, `monitor.rs` không đọc gì và chỉ chờ.
+
+Sau khi bấm Kết nối, một thẻ phủ lên cả cửa sổ cho tới khi máy in trả lời lần đầu (`connecting-overlay.tsx`, giống màn kết nối cluster của ClusterSmith):
+- Thẻ có vệt sáng chạy quanh icon máy in và một bộ đếm giây. Sau 5 giây thẻ nhắc rằng máy in có thể đang ngủ.
+- Esc hoặc nút Huỷ quay lại form nhập địa chỉ.
+- Khi không đọc được, thẻ chuyển sang báo lỗi, có hai nút Thử lại và Đổi địa chỉ.
+
+Mục **Đổi máy in…** ở chân sidebar gọi `disconnect_printer` để xoá địa chỉ đã lưu. Form nhập địa chỉ hiện lại, điền sẵn địa chỉ vừa bỏ để tiện sửa lỗi gõ.
+
+Đổi địa chỉ hoặc community ở **Cài đặt › Chung** (⌘,). Giá trị được lưu ở `settings.json` trong thư mục cấu hình của app (`~/Library/Application Support/com.ricohhub.desktop/`).
 
 ## Cách app đọc máy in
 

@@ -92,6 +92,12 @@ pub fn start(app: AppHandle) {
         let monitor = app.state::<Monitor>();
         loop {
             let settings = app.state::<Settings>().get();
+            if settings.host.is_empty() {
+                // Nothing to read until the user connects a printer.
+                monitor.update(&app, |s| s.reading = false);
+                monitor.wake.notified().await;
+                continue;
+            }
             monitor.update(&app, |s| s.reading = true);
             let result = snapshot::read_snapshot(settings.clone()).await;
 

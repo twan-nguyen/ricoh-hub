@@ -22,7 +22,7 @@ It is early, tested against one IM 3500 (firmware 5.30) on macOS only.
 brew install --cask twan-nguyen/ricoh/ricoh-hub
 ```
 
-Then set the printer's IP address in **Cài đặt** (⌘,).
+On first launch, enter the printer's IP address on the **Kết nối máy in** screen.
 
 ## Development
 

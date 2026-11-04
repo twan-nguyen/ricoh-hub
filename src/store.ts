@@ -10,6 +10,7 @@ import {
   type SubmittedJob,
   cancelJob,
   cancelScan,
+  disconnectPrinter,
   getSettings,
   getStatus,
   printFile,
@@ -26,6 +27,8 @@ export type ScanFile = { path: string; bytes: number };
 type State = {
   view: View;
   settings: PrinterSettings | null;
+  /** The address given up on last, offered again so a typo can be fixed. */
+  lastHost: string | null;
   snapshot: Snapshot | null;
   /** When the snapshot on screen was read. */
   updatedAt: number | null;
@@ -47,6 +50,8 @@ type State = {
   setView: (view: View) => void;
   refresh: () => Promise<void>;
   saveSettings: (settings: PrinterSettings) => Promise<void>;
+  connect: (host: string, community: string) => Promise<void>;
+  disconnect: () => Promise<void>;
   setDocument: (path: string | null) => void;
   setDragging: (dragging: boolean) => void;
   print: (options: PrintOptions) => Promise<SubmittedJob>;
@@ -58,6 +63,7 @@ type State = {
 export const useStore = create<State>()((set, get) => ({
   view: "overview",
   settings: null,
+  lastHost: null,
   snapshot: null,
   updatedAt: null,
   error: null,
@@ -100,6 +106,16 @@ export const useStore = create<State>()((set, get) => ({
   async saveSettings(next) {
     // A new address clears the old printer's numbers on the Rust side, which then reads the new one.
     set({ settings: await saveSettings(next) });
+  },
+
+  async connect(host, community) {
+    const { settings, saveSettings } = get();
+    if (settings) await saveSettings({ ...settings, host, community });
+  },
+
+  async disconnect() {
+    const lastHost = get().settings?.host || null;
+    set({ settings: await disconnectPrinter(), lastHost });
   },
 
   setDocument: (document) => set({ document }),

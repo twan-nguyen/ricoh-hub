@@ -186,3 +186,5 @@ export const getSettings = () => invoke<PrinterSettings>("get_settings");
 
 export const saveSettings = (next: PrinterSettings) =>
   invoke<PrinterSettings>("save_settings", { next });
+
+export const disconnectPrinter = () => invoke<PrinterSettings>("disconnect_printer");

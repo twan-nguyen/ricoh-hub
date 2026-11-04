@@ -103,8 +103,7 @@ function PrinterForm() {
             setHost(e.target.value);
             setSaved(false);
           }}
-          placeholder="192.168.1.103"
-          spellCheck={false}
+                    spellCheck={false}
           autoComplete="off"
           className="font-mono"
         />
