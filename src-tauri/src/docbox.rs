@@ -90,8 +90,8 @@ impl Jar {
     }
 }
 
-/// Web Image Monitor answers "session timed out" unless a page is reached the way a
-/// browser would: from the main frame, with the session cookie the folder page sets.
+/// Web Image Monitor answers "session timed out" unless the list is reached with the
+/// session cookie the folder page sets.
 async fn page(client: &Client, jar: &mut Jar, url: &str, referer: Option<&str>) -> Result<String, String> {
     let mut request = client.get(url).header(header::COOKIE, jar.header());
     if let Some(referer) = referer {
@@ -120,11 +120,10 @@ async fn open_list(host: &str) -> Result<ListPage, String> {
     let client = client(TIMEOUT)?;
     let mut jar = Jar::new();
     let base = format!("http://{host}/web/guest/en");
-    let top = format!("{base}/websys/webArch/topPage.cgi");
+    // The folder page alone opens the session; going through the main frame and top
+    // page first, as a browser does, only adds most of a second.
     let folders = format!("{base}/webdocbox/folderListPage.cgi");
-    page(&client, &mut jar, &format!("{base}/websys/webArch/mainFrame.cgi"), None).await?;
-    page(&client, &mut jar, &top, None).await?;
-    page(&client, &mut jar, &folders, Some(&top)).await?;
+    page(&client, &mut jar, &folders, None).await?;
     // Folder 0 is the Shared Folder, where the panel stores scans unless a user folder is picked.
     let url = format!("{base}/webdocbox/docListPage.cgi?selectedFolderId=0&subReturnDsp=3");
     let html = page(&client, &mut jar, &url, Some(&folders)).await?;

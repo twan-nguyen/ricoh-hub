@@ -17,8 +17,43 @@ import {
 import { cn, errorMessage } from "@/lib/utils";
 import { useStore } from "@/store";
 
-/** Each read walks four Web Image Monitor pages, so the list is read only now and then while open. */
+/** Each read walks two slow Web Image Monitor pages, so the list is read only now and then while open. */
 const POLL_MS = 30_000;
+
+/** The last list read, shown at once when the view opens again while a fresh one is read. */
+let lastList: { host: string; list: StoredFiles } | null = null;
+
+/**
+ * Thumbnails by file, as object URLs. The printer serves each thumbnail address once
+ * and gives a new one with every list, so a picture is fetched once per file and kept.
+ */
+const thumbnails = new Map<string, Promise<string | null>>();
+
+function thumbnail(file: StoredFile): Promise<string | null> {
+  let url = thumbnails.get(file.docId);
+  if (!url && file.thumbnailId) {
+    url = getStoredThumbnail(file.thumbnailId).then(
+      (bytes) => URL.createObjectURL(new Blob([bytes], { type: "image/jpeg" })),
+      () => {
+        // A later list brings a fresh address to try again with.
+        thumbnails.delete(file.docId);
+        return null;
+      },
+    );
+    thumbnails.set(file.docId, url);
+  }
+  return url ?? Promise.resolve(null);
+}
+
+/** Lets go of pictures for files the printer no longer holds. */
+function forgetThumbnails(kept: StoredFile[]) {
+  const ids = new Set(kept.map((f) => f.docId));
+  for (const [docId, url] of thumbnails) {
+    if (ids.has(docId)) continue;
+    thumbnails.delete(docId);
+    url.then((u) => u && URL.revokeObjectURL(u));
+  }
+}
 
 const FUNCTIONS: Record<string, string> = { Scanner: "Scan", Copier: "Copy", Printer: "In" };
 const COLORS: Record<string, string> = {
@@ -33,14 +68,19 @@ const COLORS: Record<string, string> = {
  */
 export function StoredFilesView() {
   const host = useStore((s) => s.settings?.host);
-  const [list, setList] = useState<StoredFiles | null>(null);
+  const [list, setList] = useState<StoredFiles | null>(() =>
+    lastList && lastList.host === host ? lastList.list : null,
+  );
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   function read() {
     setLoading(true);
+    const from = host;
     listStoredFiles()
       .then((next) => {
+        if (from) lastList = { host: from, list: next };
+        forgetThumbnails(next.files);
         setList(next);
         setError(null);
       }, (err) => setError(errorMessage(err)))
@@ -48,7 +88,10 @@ export function StoredFilesView() {
   }
 
   useEffect(() => {
-    setList(null);
+    const same = lastList?.host === host;
+    // Another printer numbers its files on its own, so its pictures start afresh.
+    if (!same) forgetThumbnails([]);
+    setList(same && lastList ? lastList.list : null);
     read();
     const timer = setInterval(read, POLL_MS);
     return () => clearInterval(timer);
@@ -138,7 +181,7 @@ function StoredRow({ file }: { file: StoredFile }) {
 
   return (
     <div className="flex animate-fade-in items-center gap-3 py-2 pr-2 pl-2">
-      <Thumbnail id={file.thumbnailId} />
+      <Thumbnail file={file} />
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate" title={file.name}>
           {file.name}
@@ -173,27 +216,16 @@ function StoredRow({ file }: { file: StoredFile }) {
 }
 
 /** The printer's own preview of the first page; a file icon until it arrives, or if it cannot. */
-function Thumbnail({ id }: { id: string | null }) {
+function Thumbnail({ file }: { file: StoredFile }) {
   const [url, setUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
     let live = true;
-    let objectUrl: string | null = null;
-    getStoredThumbnail(id).then(
-      (bytes) => {
-        if (!live) return;
-        objectUrl = URL.createObjectURL(new Blob([bytes], { type: "image/jpeg" }));
-        setUrl(objectUrl);
-      },
-      () => {},
-    );
+    thumbnail(file).then((next) => live && setUrl(next));
     return () => {
       live = false;
-      if (objectUrl) URL.revokeObjectURL(objectUrl);
-      setUrl(null);
     };
-  }, [id]);
+  }, [file.docId, file.thumbnailId]);
 
   return (
     <div className="flex h-12 w-9 shrink-0 items-center justify-center overflow-hidden rounded border border-border bg-muted">
