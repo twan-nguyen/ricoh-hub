@@ -6,6 +6,8 @@ Ghi chú vận hành cho chủ repo. Người dùng cài app bằng Homebrew:
 brew install --cask twan-nguyen/ricoh/ricoh-hub
 ```
 
+Cask dùng stanza `postflight_steps`, chỉ có từ Homebrew 6.0.16. Máy chạy Homebrew cũ hơn sẽ báo cask không đọc được, nên cần chạy `brew update` trước khi cài.
+
 ## Phát hành bản mới
 
 1. Commit và push mọi thay đổi lên `main`.
