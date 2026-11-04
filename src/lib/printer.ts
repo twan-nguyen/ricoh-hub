@@ -188,3 +188,26 @@ export const saveSettings = (next: PrinterSettings) =>
   invoke<PrinterSettings>("save_settings", { next });
 
 export const disconnectPrinter = () => invoke<PrinterSettings>("disconnect_printer");
+
+/** A file kept in the printer's Document Server, from Web Image Monitor's list. */
+export type StoredFile = {
+  docId: string;
+  name: string;
+  /** Printer's local time, "2026-10-30T23:47:00". */
+  created: string | null;
+  pages: number | null;
+  /** "Scanner", "Copier" or "Printer". */
+  function: string | null;
+  color: string | null;
+  thumbnailId: string | null;
+};
+
+export type StoredFiles = { total: number; files: StoredFile[] };
+
+export const listStoredFiles = () => invoke<StoredFiles>("list_stored_files");
+
+export const getStoredThumbnail = (id: string) => invoke<ArrayBuffer>("get_stored_thumbnail", { id });
+
+/** Saves a Document Server file into the scan folder as PDF; the printer keeps its copy. */
+export const downloadStoredFile = (docId: string) =>
+  invoke<{ path: string; bytes: number }>("download_stored_file", { docId });

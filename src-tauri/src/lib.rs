@@ -1,5 +1,6 @@
 use tauri::{Manager, RunEvent, WindowEvent};
 
+mod docbox;
 mod history;
 mod monitor;
 mod notifications;
@@ -45,6 +46,7 @@ pub fn run() {
         })
         .manage(monitor::Monitor::default())
         .manage(scanning::ActiveScan::default())
+        .manage(docbox::Docbox::default())
         .on_window_event(|window, event| {
             if let WindowEvent::CloseRequested { api, .. } = event {
                 api.prevent_close();
@@ -68,6 +70,9 @@ pub fn run() {
             scanning::cancel_scan,
             scanning::open_scan,
             scanning::reveal_scan,
+            docbox::list_stored_files,
+            docbox::get_stored_thumbnail,
+            docbox::download_stored_file,
         ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")

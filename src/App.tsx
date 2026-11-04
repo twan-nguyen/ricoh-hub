@@ -10,6 +10,7 @@ import { PrintView } from "@/components/print-view";
 import { ScanView } from "@/components/scan-view";
 import { SettingsView } from "@/components/settings-view";
 import { StatsView } from "@/components/stats-view";
+import { StoredFilesView } from "@/components/stored-files";
 import { Sidebar } from "@/components/sidebar";
 import { type View, useStore } from "@/store";
 
@@ -17,6 +18,7 @@ const VIEWS: Record<View, () => React.ReactNode> = {
   overview: () => <OverviewView />,
   print: () => <PrintView />,
   scan: () => <ScanView />,
+  stored: () => <StoredFilesView />,
   jobs: () => <JobsView />,
   counters: () => <CountersView />,
   stats: () => <StatsView />,

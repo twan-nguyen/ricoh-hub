@@ -352,7 +352,7 @@ async fn scan(
 }
 
 /// The folder scans go to: the one chosen in Settings, else Downloads/Ricoh Scans.
-fn scan_folder(app: &AppHandle, settings: &Settings) -> Result<PathBuf, String> {
+pub(crate) fn scan_folder(app: &AppHandle, settings: &Settings) -> Result<PathBuf, String> {
     match settings.get().scan_folder {
         Some(folder) => Ok(PathBuf::from(folder)),
         None => Ok(app

@@ -21,7 +21,7 @@ tauri-plugin-opener = "2"
 tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-tokio = { version = "1", features = ["time", "macros", "net", "rt"] }
+tokio = { version = "1", features = ["time", "macros", "net", "rt", "sync"] }
 ipp = { version = "8", default-features = false, features = ["async-client"] }
 # heap_buffers: the 64 KB receive buffer otherwise sits in the future and overflows the stack.
 snmp2 = { version = "0.5", default-features = false, features = ["tokio", "heap_buffers"] }
@@ -29,6 +29,8 @@ snmp2 = { version = "0.5", default-features = false, features = ["tokio", "heap_
 reqwest = { version = "0.13", default-features = false }
 roxmltree = "0.21"
 jiff = "0.2"
+# Web Image Monitor hides the download address in a base64 query.
+base64 = "0.23"
 tauri-plugin-autostart = "2"
 tauri-plugin-notification = "2"
 # bundled: SQLite is compiled in rather than taken from the system.

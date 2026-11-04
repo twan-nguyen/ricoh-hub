@@ -6,6 +6,7 @@ import {
   ExternalLink,
   FileUp,
   Hash,
+  Inbox,
   LayoutDashboard,
   ListOrdered,
   RotateCw,
@@ -80,6 +81,12 @@ function AppNav() {
             label="Scan"
             active={view === "scan"}
             onClick={() => setView("scan")}
+          />
+          <NavItem
+            icon={<Inbox />}
+            label="File trên máy in"
+            active={view === "stored"}
+            onClick={() => setView("stored")}
           />
           <NavItem
             icon={<ListOrdered />}

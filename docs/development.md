@@ -78,6 +78,19 @@ RICOH_HOST=192.168.1.103 cargo test live_scanner -- --ignored --nocapture       
 RICOH_SCAN=1 cargo test live_scan_glass -- --ignored --nocapture                 # scan mặt kính 1 lần
 ```
 
+### File scan lưu trên máy in
+
+Bản scan bấm trên máy in và chọn lưu file (Store File) nằm trong Document Server, thư mục Shared Folder. eSCL không thấy các file này. `src-tauri/src/docbox.rs` đọc danh sách từ Web Image Monitor bằng tài khoản khách. Giao diện là mục **File trên máy in** trên sidebar (`src/components/stored-files.tsx`).
+
+- Thứ tự gọi trang: `mainFrame.cgi` → `topPage.cgi` → `webdocbox/folderListPage.cgi` → `webdocbox/docListPage.cgi?selectedFolderId=0`. Trang thư mục đặt cookie `risessionid`; thiếu cookie này thì trang danh sách báo "Session timed out".
+- Cookie `docList_rowBlockSize=20` cho trang hiện 20 file, mức nhiều nhất trang cho chọn. Tổng số file đọc từ dòng "Total Files".
+- Mỗi file lấy từ chú thích của ảnh thu nhỏ: `SCAN0099 :   [Oct 30, 2026 11:47 PM  11Page(s)]`. Ảnh thu nhỏ tải từ `/DH/repository/thumbnail.jpg?id=…`.
+- Phiên Web Image Monitor gắn với máy tính. Vì vậy app chỉ đọc khi mục này đang mở, 30 giây một lần, và không cho hai lần đọc chạy cùng lúc.
+- **Tải file** (nút Tải về, lệnh `download_stored_file`). Trên web, tải gồm hai bước liền nhau. Bước một: POST `docListDownload.cgi?docId=…&docType=…`, lấy từ ô `pdfURI` của trang danh sách và gửi kèm `wimToken`. Trang trả về có `pageDownload('…/DH/repository/content/<tên>.pdf?<base64>')`. Bước hai: giải base64 ra `id`, `jt`, `el`, rồi POST ba trường đó tới đường dẫn content để nhận PDF. Hai bước phải chạy ngay sau nhau; lần đầu thử cách nhau khoảng một phút thì máy trả lỗi `errorcode=70201`.
+- Ngày 4/11/2026 đã thử với một bản scan nháp (SCAN0100, 1 trang): nhận được PDF 468 KB, và file vẫn còn trên máy sau khi tải. 4 file biến mất trước đó đã quá hạn 3 ngày, nên nhiều khả năng do máy tự xoá chứ không do bước tải.
+- File tải về lưu dạng PDF vào thư mục scan, đặt theo tên trên máy in (`SCAN0100.pdf`, trùng tên thì thêm ` (2)`). Bản trên máy in giữ nguyên.
+- Test chỉ đọc với máy thật: `RICOH_HOST=<ip> cargo test live_docbox_lists -- --ignored --nocapture`. Test tải chỉ chạy khi nêu tên một bản scan nháp: `RICOH_DOWNLOAD=SCAN0100 cargo test live_docbox_download -- --ignored --nocapture`.
+
 ## Menu bar
 
 App sống trên menu bar (`src-tauri/src/tray.rs`). Đóng cửa sổ (nút đỏ, ⌘W) chỉ ẩn cửa sổ và icon Dock; app vẫn theo dõi máy in. Muốn thoát hẳn thì dùng ⌘Q hoặc mục "Thoát Ricoh Hub" trong menu của icon.
