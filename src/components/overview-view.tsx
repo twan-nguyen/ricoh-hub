@@ -17,6 +17,7 @@ import {
   issues,
   keyCounters,
   panelMessage,
+  paperLeft,
   paperSize,
   printerState,
   tonerStatus,
@@ -195,10 +196,7 @@ function TraysSection({ trays }: { trays: Tray[] }) {
 function TrayRow({ tray }: { tray: Tray }) {
   const status = trayStatus(tray);
   const name = trayName(tray);
-  const amount =
-    tray.level >= 0 && tray.capacity > 0
-      ? `${formatNumber(tray.level)} / ${formatNumber(tray.capacity)} tờ`
-      : `tối đa ${formatNumber(tray.capacity)} tờ`;
+  const amount = paperLeft(tray) ?? `tối đa ${formatNumber(tray.capacity)} tờ`;
 
   return (
     <div className="flex flex-col gap-2 px-4 py-3">
@@ -213,7 +211,12 @@ function TrayRow({ tray }: { tray: Tray }) {
       </div>
       <div className="flex items-center gap-3">
         <Meter fill={status.fill} tone={status.tone} label={`Giấy còn trong ${name}`} />
-        <span className="w-24 shrink-0 text-right text-muted-foreground tabular-nums">{amount}</span>
+        <span
+          className="w-24 shrink-0 text-right text-muted-foreground tabular-nums"
+          title={`Máy in ước lượng theo nấc. Khay chứa tối đa ${formatNumber(tray.capacity)} tờ.`}
+        >
+          {amount}
+        </span>
       </div>
     </div>
   );

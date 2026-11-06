@@ -93,7 +93,8 @@ fn problems(snapshot: &Snapshot) -> Vec<Problem> {
             found.push(problem(
                 format!("paper-low:{}", tray.name),
                 Kind::Paper,
-                format!("{name} sắp hết giấy (còn {} tờ)", tray.level),
+                // The printer senses paper in steps, so the share is what it knows.
+                format!("{name} sắp hết giấy (còn khoảng {}%)", tray.level * 100 / tray.capacity),
                 None,
             ));
         }
@@ -227,7 +228,7 @@ mod tests {
         assert!(tracker.observe(Ok(&healthy())).is_empty());
 
         let low = snapshot(&["media-low-warning"], Some(60), vec![tray("Tray 1", 400), tray("Tray 2", 55)]);
-        assert_eq!(texts(tracker.observe(Ok(&low))), ["Khay 2 sắp hết giấy (còn 55 tờ)"]);
+        assert_eq!(texts(tracker.observe(Ok(&low))), ["Khay 2 sắp hết giấy (còn khoảng 10%)"]);
         assert!(tracker.observe(Ok(&low)).is_empty());
     }
 

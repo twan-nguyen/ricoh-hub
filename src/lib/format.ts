@@ -164,6 +164,16 @@ export function trayName(tray: Tray) {
   return tray.name.replace(/^Tray\s*(\d+)$/, "Khay $1");
 }
 
+/**
+ * Paper left as a share of the tray, "70%". The printer senses paper in steps and
+ * reports a sheet count worked back from that share, so a count would look exact
+ * when it is not.
+ */
+export function paperLeft(tray: Tray): string | null {
+  if (tray.level < 0 || tray.capacity <= 0) return null;
+  return `${Math.round(Math.min(1, tray.level / tray.capacity) * 100)}%`;
+}
+
 /** Below this share of its capacity a tray reads as running low. */
 const LOW_PAPER = 0.15;
 

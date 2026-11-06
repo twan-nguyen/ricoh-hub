@@ -6,7 +6,7 @@ import { Field, Segmented } from "@/components/form-controls";
 import { Panel, PanelHeader } from "@/components/panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { type StatusTone, formatNumber, paperSize, trayName, trayStatus } from "@/lib/format";
+import { type StatusTone, paperLeft, paperSize, trayName, trayStatus } from "@/lib/format";
 import {
   PRINTABLE_EXTENSIONS,
   type PrintOptions,
@@ -273,7 +273,8 @@ function TrayHint({ source, tray }: { source: TraySource; tray: Tray | undefined
       ? "Đặt giấy vào khay tay trước khi bấm In."
       : "Khay tay đang có giấy.";
   }
-  const left = tray.level >= 0 ? `, còn ${formatNumber(tray.level)} tờ` : "";
+  const share = paperLeft(tray);
+  const left = share ? `, còn khoảng ${share}` : "";
   return (
     <span className={HINT_TONE[status.tone]}>
       {trayName(tray)}: {status.label.toLowerCase()}
